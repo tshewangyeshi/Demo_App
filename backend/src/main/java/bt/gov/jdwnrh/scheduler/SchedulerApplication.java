@@ -2,7 +2,10 @@ package bt.gov.jdwnrh.scheduler;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+// @EnableScheduling powers NotificationSenderJob and ReminderJob (see notification package).
+@EnableScheduling
 @SpringBootApplication
 public class SchedulerApplication {
 

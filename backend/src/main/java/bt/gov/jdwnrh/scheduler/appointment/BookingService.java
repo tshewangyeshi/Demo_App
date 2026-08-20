@@ -33,6 +33,7 @@ import bt.gov.jdwnrh.scheduler.scheduling.DoctorRepository;
 public class BookingService {
 
     private static final String SQLSTATE_EXCLUSION_VIOLATION = "23P01";
+    private static final int MAX_REFERENCE_NUMBER_ATTEMPTS = 3;
 
     private final RlsSessionInitializer rlsSessionInitializer;
     private final CurrentUser currentUser;
@@ -44,6 +45,7 @@ public class BookingService {
     private final AppointmentHistoryRepository appointmentHistoryRepository;
     private final NotificationEnqueuer notificationEnqueuer;
     private final ReferenceNumberGenerator referenceNumberGenerator;
+    private final ReferenceNumberUniquenessChecker referenceNumberUniquenessChecker;
     private final Clock clock;
 
     public BookingService(RlsSessionInitializer rlsSessionInitializer, CurrentUser currentUser,
@@ -52,7 +54,8 @@ public class BookingService {
                            AppointmentRepository appointmentRepository,
                            AppointmentHistoryRepository appointmentHistoryRepository,
                            NotificationEnqueuer notificationEnqueuer,
-                           ReferenceNumberGenerator referenceNumberGenerator, Clock clock) {
+                           ReferenceNumberGenerator referenceNumberGenerator,
+                           ReferenceNumberUniquenessChecker referenceNumberUniquenessChecker, Clock clock) {
         this.rlsSessionInitializer = rlsSessionInitializer;
         this.currentUser = currentUser;
         this.appointmentTypeRepository = appointmentTypeRepository;
@@ -63,6 +66,7 @@ public class BookingService {
         this.appointmentHistoryRepository = appointmentHistoryRepository;
         this.notificationEnqueuer = notificationEnqueuer;
         this.referenceNumberGenerator = referenceNumberGenerator;
+        this.referenceNumberUniquenessChecker = referenceNumberUniquenessChecker;
         this.clock = clock;
     }
 
@@ -81,8 +85,25 @@ public class BookingService {
         }
 
         Instant now = clock.instant();
+
+        // ReferenceNumberGenerator's 6-digit random suffix makes a collision
+        // astronomically unlikely per booking (~1 in a million), but "unlikely"
+        // isn't "impossible". Checked BEFORE the insert, not retried after a
+        // failed one: Postgres aborts the whole transaction on any statement
+        // error until rollback, so a second saveAndFlush attempt inside the
+        // same @Transactional method after a constraint violation would just
+        // fail immediately with "current transaction is aborted" — retrying
+        // in place here isn't actually possible, only avoiding the collision
+        // in the first place is.
+        String referenceNumber = referenceNumberGenerator.generate();
+        for (int attempt = 1; attempt < MAX_REFERENCE_NUMBER_ATTEMPTS
+                && referenceNumberUniquenessChecker.isActiveReferenceNumber(referenceNumber);
+                attempt++) {
+            referenceNumber = referenceNumberGenerator.generate();
+        }
+
         Appointment appointment = new Appointment(
-                UUID.randomUUID(), referenceNumberGenerator.generate(), caller.userId(), doctorId,
+                UUID.randomUUID(), referenceNumber, caller.userId(), doctorId,
                 appointmentTypeId, requestedStart, now);
         appointment.transitionTo(AppointmentStatus.CONFIRMED, now);
 

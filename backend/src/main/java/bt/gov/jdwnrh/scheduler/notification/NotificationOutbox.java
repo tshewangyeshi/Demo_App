@@ -17,8 +17,8 @@ import jakarta.persistence.Table;
  * Written in the SAME transaction as the booking/cancellation/reschedule it
  * announces (see docs/designs/jdwnrh-scheduler.md, "Sending is async via an
  * outbox, not synchronous") — the booking commits regardless of whether the
- * email provider is up; a separate sender polls PENDING rows and delivers
- * them with retry.
+ * email provider is up; NotificationSenderJob polls PENDING rows and
+ * delivers them with retry/backoff (see markSent/markFailedAndRetry).
  */
 @Entity
 @Table(name = "notification_outbox")
@@ -48,6 +48,9 @@ public class NotificationOutbox {
     @Column(nullable = false)
     private int attempts = 0;
 
+    @Column(name = "next_attempt_at", nullable = false)
+    private Instant nextAttemptAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -66,6 +69,59 @@ public class NotificationOutbox {
         this.recipientEmail = recipientEmail;
         this.payload = payloadJson;
         this.createdAt = now;
+        this.nextAttemptAt = now; // eligible for the very next sender poll
+    }
+
+    public void markSent(Instant now) {
+        this.status = OutboxStatus.SENT;
+        this.sentAt = now;
+    }
+
+    /** attempts is incremented BEFORE this is called (see NotificationSenderJob) — nextAttemptAt is the backoff delay already computed from that count. */
+    public void markFailedAndRetry(int attempts, Instant nextAttemptAt) {
+        this.attempts = attempts;
+        this.nextAttemptAt = nextAttemptAt;
+    }
+
+    public void markPermanentlyFailed(int attempts) {
+        this.attempts = attempts;
+        this.status = OutboxStatus.FAILED;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getAppointmentId() {
+        return appointmentId;
+    }
+
+    public NotificationEventType getEventType() {
+        return eventType;
+    }
+
+    public String getRecipientEmail() {
+        return recipientEmail;
+    }
+
+    public String getPayload() {
+        return payload;
+    }
+
+    public OutboxStatus getStatus() {
+        return status;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getSentAt() {
+        return sentAt;
     }
 
     public enum OutboxStatus {

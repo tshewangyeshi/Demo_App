@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 /**
  * Format is explicitly "decided at implementation time" per the design doc.
  * JDW-{year}-{6-digit}. Collisions are astronomically unlikely (1 in a
- * million per year) but not impossible — BookingService retries on the rare
- * unique-index collision rather than assuming this alone guarantees
- * uniqueness.
+ * million per year) but not impossible — BookingService checks for one
+ * BEFORE inserting (see ReferenceNumberUniquenessChecker) rather than
+ * assuming this alone guarantees uniqueness.
  */
 @Component
 public class ReferenceNumberGenerator {

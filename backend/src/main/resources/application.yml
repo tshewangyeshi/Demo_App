@@ -53,6 +53,16 @@ app:
     # since credentialed cross-origin requests (the refresh cookie) require
     # the server to echo back the specific calling origin.
     allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  mail:
+    # Default false: LoggingEmailSender is active, no real SMTP account
+    # needed to run this locally (see notification/LoggingEmailSender). Set
+    # APP_MAIL_ENABLED=true plus spring.mail.host/port/username/password
+    # (standard Spring Boot mail properties) to send real email via SmtpEmailSender.
+    enabled: ${APP_MAIL_ENABLED:false}
+    from: ${APP_MAIL_FROM:noreply@jdwnrh.example}
+  notifications:
+    sender-interval-ms: ${APP_NOTIFICATION_SENDER_INTERVAL_MS:15000}
+    reminder-interval-ms: ${APP_REMINDER_INTERVAL_MS:60000}
 
 logging:
   pattern:

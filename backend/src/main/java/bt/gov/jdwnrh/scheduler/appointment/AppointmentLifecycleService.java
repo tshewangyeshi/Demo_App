@@ -104,7 +104,15 @@ public class AppointmentLifecycleService {
         Instant now = clock.instant();
         AppointmentStatus previousStatus = original.getStatus();
         original.transitionTo(AppointmentStatus.RESCHEDULED, now); // terminal — drops out of the partial exclusion index, freeing its range
-        appointmentRepository.save(original);
+        // MUST flush here, not just save(): Hibernate's default action-queue
+        // order runs ALL pending inserts before ALL pending updates within a
+        // single flush, regardless of call order — so without forcing this
+        // UPDATE to hit the DB now, the saveAndFlush(rescheduled) INSERT below
+        // (same reference_number, carried forward unchanged) would execute
+        // while `original` is still ACTIVE in the database, tripping
+        // uq_appointment_reference_active. Only found by actually running a
+        // reschedule end-to-end, not by reading the code.
+        appointmentRepository.saveAndFlush(original);
 
         appointmentHistoryRepository.save(new AppointmentHistory(
                 UUID.randomUUID(), original.getId(), previousStatus, AppointmentStatus.RESCHEDULED,

@@ -21,3 +21,4 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     /** Used by the staff daily queue and the doctor's own daily agenda — RLS narrows this to what the caller's role/department/ownership permits. */
     List<Appointment> findByStartTimeGreaterThanEqualAndStartTimeLessThan(Instant dayStart, Instant dayEnd, Sort sort);
 }
+
