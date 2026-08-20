@@ -44,6 +44,14 @@ spring:
 server:
   port: ${PORT:8080}
 
+app:
+  jwt:
+    # HMAC-SHA signing key for access tokens — MUST be overridden via
+    # APP_JWT_SECRET in every real environment. The default below is only
+    # for local dev against a throwaway database and is deliberately obvious
+    # so it's never mistaken for a real secret.
+    secret: ${APP_JWT_SECRET:dev-only-secret-change-me-before-any-real-deploy-0123456789}
+
 logging:
   pattern:
     # Structured logging groundwork (see design doc "Observability"): every
