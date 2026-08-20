@@ -88,7 +88,7 @@ public class Appointment {
      */
     public void transitionTo(AppointmentStatus target) {
         if (!status.canTransitionTo(target)) {
-            throw new IllegalStateException(
+            throw new InvalidStatusTransitionException(
                     "Cannot transition appointment " + id + " from " + status + " to " + target);
         }
         this.status = target;
