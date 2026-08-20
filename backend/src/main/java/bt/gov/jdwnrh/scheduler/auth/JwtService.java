@@ -56,6 +56,15 @@ public class JwtService {
     public VerifiedAccessToken verify(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
+                // jjwt validates exp/nbf against ITS OWN clock, which defaults to real
+                // system time — not the injected java.time.Clock this service issues
+                // tokens against. Without this, the admin time-travel toggle (E4) would
+                // desync token expiry from the app's simulated "now": jumping time
+                // forward would make every token appear to last far longer than 15
+                // real minutes (harmless but wrong), and jumping back after a forward
+                // jump could make a token look "not yet valid". io.jsonwebtoken.Clock is
+                // a distinct interface from java.time.Clock — this adapts one to the other.
+                .clock(() -> Date.from(clock.instant()))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

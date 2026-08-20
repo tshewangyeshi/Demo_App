@@ -221,3 +221,17 @@ export interface ReportSummary {
 
 export const getReportSummary = (from: string, to: string) =>
   apiFetch<ReportSummary>(`/api/admin/reports/summary?from=${from}&to=${to}`)
+
+// --- Time travel (HOSPITAL_ADMIN/SUPER_ADMIN only) ---
+
+export interface TimeTravelStatus {
+  currentSimulatedTime: string
+  offsetDays: number
+}
+
+export const getTimeTravelStatus = () => apiFetch<TimeTravelStatus>('/api/admin/time-travel')
+
+export const advanceTime = (days: number) =>
+  apiFetch<TimeTravelStatus>('/api/admin/time-travel/advance', { method: 'POST', body: { days } })
+
+export const resetTime = () => apiFetch<TimeTravelStatus>('/api/admin/time-travel/reset', { method: 'POST' })

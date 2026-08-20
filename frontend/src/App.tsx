@@ -14,6 +14,7 @@ import AdminDoctorSchedulePage from './pages/AdminDoctorSchedulePage'
 import AdminAccessRequestsPage from './pages/AdminAccessRequestsPage'
 import AdminAuditLogPage from './pages/AdminAuditLogPage'
 import AdminReportingPage from './pages/AdminReportingPage'
+import AdminTimeTravelPage from './pages/AdminTimeTravelPage'
 import { ADMIN_ROLES, HOSPITAL_WIDE_ROLES, STAFF_ROLES } from './lib/roles'
 
 export default function App() {
@@ -101,6 +102,14 @@ export default function App() {
               element={
                 <ProtectedRoute roles={ADMIN_ROLES}>
                   <AdminReportingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/time-travel"
+              element={
+                <ProtectedRoute roles={HOSPITAL_WIDE_ROLES}>
+                  <AdminTimeTravelPage />
                 </ProtectedRoute>
               }
             />

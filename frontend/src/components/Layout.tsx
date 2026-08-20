@@ -53,7 +53,12 @@ export default function Layout() {
                   <Link to="/admin/reports">Reports</Link>
                 </>
               )}
-              {HOSPITAL_WIDE_ROLES.includes(user.role) && <Link to="/admin/audit-log">Audit Log</Link>}
+              {HOSPITAL_WIDE_ROLES.includes(user.role) && (
+                <>
+                  <Link to="/admin/audit-log">Audit Log</Link>
+                  <Link to="/admin/time-travel">Time Travel</Link>
+                </>
+              )}
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
                 {user.firstName} · {ROLE_LABELS[user.role]}
               </span>
