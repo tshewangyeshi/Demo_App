@@ -1,5 +1,6 @@
 package bt.gov.jdwnrh.scheduler.appointment;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,10 +20,18 @@ public class AppointmentController {
 
     private final BookingService bookingService;
     private final AppointmentLifecycleService lifecycleService;
+    private final AppointmentQueryService queryService;
 
-    public AppointmentController(BookingService bookingService, AppointmentLifecycleService lifecycleService) {
+    public AppointmentController(BookingService bookingService, AppointmentLifecycleService lifecycleService,
+                                  AppointmentQueryService queryService) {
         this.bookingService = bookingService;
         this.lifecycleService = lifecycleService;
+        this.queryService = queryService;
+    }
+
+    @GetMapping("/api/appointments/mine")
+    public List<AppointmentResponse> mine() {
+        return queryService.listVisible().stream().map(AppointmentResponse::from).toList();
     }
 
     @PostMapping("/api/appointments")

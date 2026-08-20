@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AppointmentTypeRepository extends JpaRepository<AppointmentType, UUID> {
+public interface SpecialtyRepository extends JpaRepository<Specialty, UUID> {
 
-    List<AppointmentType> findBySpecialtyId(UUID specialtyId);
+    List<Specialty> findByDepartmentId(UUID departmentId);
 }
