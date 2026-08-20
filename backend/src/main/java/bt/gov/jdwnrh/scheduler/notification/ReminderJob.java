@@ -1,7 +1,10 @@
 package bt.gov.jdwnrh.scheduler.notification;
 
+import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class ReminderJob {
 
+    private static final Logger log = LoggerFactory.getLogger(ReminderJob.class);
     private static final int BATCH_SIZE = 50;
 
     private final ReminderClaimRepository claimRepository;
@@ -28,11 +32,16 @@ public class ReminderJob {
     @Scheduled(fixedDelayString = "${app.notifications.reminder-interval-ms:60000}")
     @Transactional
     public void run() {
-        for (var candidate : claimRepository.claim24hReminders(BATCH_SIZE)) {
+        List<ReminderClaimRepository.ReminderCandidate> claimed24h = claimRepository.claim24hReminders(BATCH_SIZE);
+        for (var candidate : claimed24h) {
             enqueue(NotificationEventType.REMINDER_24H, candidate);
         }
-        for (var candidate : claimRepository.claim2hReminders(BATCH_SIZE)) {
+        List<ReminderClaimRepository.ReminderCandidate> claimed2h = claimRepository.claim2hReminders(BATCH_SIZE);
+        for (var candidate : claimed2h) {
             enqueue(NotificationEventType.REMINDER_2H, candidate);
+        }
+        if (!claimed24h.isEmpty() || !claimed2h.isEmpty()) {
+            log.info("Reminder job claimed {} 24h and {} 2h reminder(s)", claimed24h.size(), claimed2h.size());
         }
     }
 

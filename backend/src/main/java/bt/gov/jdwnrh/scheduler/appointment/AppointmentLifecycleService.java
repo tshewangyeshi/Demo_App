@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import bt.gov.jdwnrh.scheduler.scheduling.DoctorRepository;
 @Service
 public class AppointmentLifecycleService {
 
+    private static final Logger log = LoggerFactory.getLogger(AppointmentLifecycleService.class);
     private static final String SQLSTATE_EXCLUSION_VIOLATION = "23P01";
 
     private final RlsSessionInitializer rlsSessionInitializer;
@@ -81,6 +84,9 @@ public class AppointmentLifecycleService {
         notifyPatient(appointment, NotificationEventType.CANCELLED, Map.of(
                 "referenceNumber", appointment.getReferenceNumber()));
 
+        log.info("Appointment cancelled appointmentId={} referenceNumber={} actorId={} previousStatus={}",
+                appointment.getId(), appointment.getReferenceNumber(), caller.userId(), previousStatus);
+
         return appointment;
     }
 
@@ -98,6 +104,8 @@ public class AppointmentLifecycleService {
                 .orElseThrow(() -> new IllegalStateException("Doctor disappeared: " + original.getDoctorId()));
 
         if (!slotAvailabilityChecker.isAvailable(original.getDoctorId(), doctor.getDepartmentId(), appointmentType, newStartTime)) {
+            log.info("Reschedule rejected: slot unavailable at pre-check appointmentId={} actorId={} newStartTime={}",
+                    appointmentId, caller.userId(), newStartTime);
             throw new SlotUnavailableException("That time is not available. Please pick another slot.");
         }
 
@@ -131,6 +139,8 @@ public class AppointmentLifecycleService {
             appointmentRepository.saveAndFlush(rescheduled);
         } catch (DataIntegrityViolationException ex) {
             if (isExclusionViolation(ex)) {
+                log.info("Reschedule rejected: exclusion constraint (concurrent race lost) appointmentId={} actorId={} newStartTime={}",
+                        appointmentId, caller.userId(), newStartTime);
                 throw new SlotUnavailableException("That time was just booked by someone else. Please pick another slot.");
             }
             throw ex;
@@ -143,6 +153,9 @@ public class AppointmentLifecycleService {
         notifyPatient(rescheduled, NotificationEventType.RESCHEDULED, Map.of(
                 "referenceNumber", rescheduled.getReferenceNumber(),
                 "newStartTime", rescheduled.getStartTime().toString()));
+
+        log.info("Appointment rescheduled fromAppointmentId={} toAppointmentId={} referenceNumber={} actorId={} newStartTime={}",
+                original.getId(), rescheduled.getId(), rescheduled.getReferenceNumber(), caller.userId(), newStartTime);
 
         return rescheduled;
     }

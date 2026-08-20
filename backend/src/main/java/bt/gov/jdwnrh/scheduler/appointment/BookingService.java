@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ import bt.gov.jdwnrh.scheduler.scheduling.DoctorRepository;
 @Service
 public class BookingService {
 
+    private static final Logger log = LoggerFactory.getLogger(BookingService.class);
     private static final String SQLSTATE_EXCLUSION_VIOLATION = "23P01";
     private static final int MAX_REFERENCE_NUMBER_ATTEMPTS = 3;
 
@@ -81,6 +84,8 @@ public class BookingService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown doctor: " + doctorId));
 
         if (!slotAvailabilityChecker.isAvailable(doctorId, doctor.getDepartmentId(), appointmentType, requestedStart)) {
+            log.info("Booking rejected: slot unavailable at pre-check patientId={} doctorId={} appointmentTypeId={} requestedStart={}",
+                    caller.userId(), doctorId, appointmentTypeId, requestedStart);
             throw new SlotUnavailableException("This slot is no longer available. Please pick another time.");
         }
 
@@ -111,6 +116,11 @@ public class BookingService {
             appointmentRepository.saveAndFlush(appointment);
         } catch (DataIntegrityViolationException ex) {
             if (isExclusionViolation(ex)) {
+                // Lost the race: the pre-check above passed, but a concurrent booking
+                // won first — this is the exact scenario the exclusion constraint (and
+                // the load test) exist to guarantee never produces a double-booking.
+                log.info("Booking rejected: exclusion constraint (concurrent race lost) patientId={} doctorId={} appointmentTypeId={} requestedStart={}",
+                        caller.userId(), doctorId, appointmentTypeId, requestedStart);
                 throw new SlotUnavailableException(
                         "This slot was just booked by someone else. Please pick another time.");
             }
@@ -127,6 +137,9 @@ public class BookingService {
                 Map.of("referenceNumber", appointment.getReferenceNumber(),
                         "doctorId", appointment.getDoctorId().toString(),
                         "startTime", appointment.getStartTime().toString()));
+
+        log.info("Booking confirmed appointmentId={} referenceNumber={} patientId={} doctorId={} startTime={}",
+                appointment.getId(), appointment.getReferenceNumber(), caller.userId(), doctorId, requestedStart);
 
         return appointment;
     }
