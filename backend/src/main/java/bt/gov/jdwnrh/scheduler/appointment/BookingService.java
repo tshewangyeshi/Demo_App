@@ -136,7 +136,12 @@ public class BookingService {
         notificationEnqueuer.enqueue(NotificationEventType.BOOKING_CONFIRMED, appointment.getId(), patient.getEmail(),
                 Map.of("referenceNumber", appointment.getReferenceNumber(),
                         "doctorId", appointment.getDoctorId().toString(),
-                        "startTime", appointment.getStartTime().toString()));
+                        "startTime", appointment.getStartTime().toString(),
+                        // Computed directly rather than read off the entity: end_time is DB-trigger-derived
+                        // (insertable=false) and isn't populated on the in-memory entity after save — see
+                        // Appointment's javadoc. This is the same math the trigger does (V4), just needed
+                        // here for the E3 .ics attachment's DTEND.
+                        "endTime", requestedStart.plus(appointmentType.slotFootprint()).toString()));
 
         log.info("Booking confirmed appointmentId={} referenceNumber={} patientId={} doctorId={} startTime={}",
                 appointment.getId(), appointment.getReferenceNumber(), caller.userId(), doctorId, requestedStart);

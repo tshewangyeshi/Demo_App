@@ -64,7 +64,10 @@ public class NotificationSenderJob {
             Map<String, Object> payload = objectMapper.readValue(outbox.getPayload(), new TypeReference<Map<String, Object>>() {
             });
             NotificationTemplateRenderer.RenderedEmail rendered = renderer.render(outbox.getEventType(), payload);
-            emailSender.send(outbox.getRecipientEmail(), rendered.subject(), rendered.body());
+            EmailSender.Attachment icsAttachment = renderer.generateIcs(outbox.getEventType(), payload)
+                    .map(ics -> new EmailSender.Attachment("appointment.ics", ics, "text/calendar"))
+                    .orElse(null);
+            emailSender.send(outbox.getRecipientEmail(), rendered.subject(), rendered.body(), icsAttachment);
             outbox.markSent(clock.instant());
         } catch (Exception ex) {
             int attempts = outbox.getAttempts() + 1;

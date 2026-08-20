@@ -20,7 +20,12 @@ public class LoggingEmailSender implements EmailSender {
     private static final Logger log = LoggerFactory.getLogger(LoggingEmailSender.class);
 
     @Override
-    public void send(String recipientEmail, String subject, String body) {
-        log.info("EMAIL (not actually sent — app.mail.enabled=false) to={} subject=\"{}\"\n{}", recipientEmail, subject, body);
+    public void send(String recipientEmail, String subject, String body, Attachment attachment) {
+        if (attachment != null) {
+            log.info("EMAIL (not actually sent — app.mail.enabled=false) to={} subject=\"{}\" attachment={} ({} bytes)\n{}",
+                    recipientEmail, subject, attachment.filename(), attachment.content().length(), body);
+        } else {
+            log.info("EMAIL (not actually sent — app.mail.enabled=false) to={} subject=\"{}\"\n{}", recipientEmail, subject, body);
+        }
     }
 }

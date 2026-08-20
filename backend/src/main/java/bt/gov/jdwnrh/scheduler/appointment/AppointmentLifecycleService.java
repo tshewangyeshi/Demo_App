@@ -152,7 +152,11 @@ public class AppointmentLifecycleService {
 
         notifyPatient(rescheduled, NotificationEventType.RESCHEDULED, Map.of(
                 "referenceNumber", rescheduled.getReferenceNumber(),
-                "newStartTime", rescheduled.getStartTime().toString()));
+                "newStartTime", rescheduled.getStartTime().toString(),
+                // Same reasoning as BookingService's "endTime": computed directly, not read off
+                // the entity (end_time is DB-trigger-derived, not populated in-memory after save) —
+                // needed for the E3 .ics attachment's DTEND.
+                "newEndTime", newStartTime.plus(appointmentType.slotFootprint()).toString()));
 
         log.info("Appointment rescheduled fromAppointmentId={} toAppointmentId={} referenceNumber={} actorId={} newStartTime={}",
                 original.getId(), rescheduled.getId(), rescheduled.getReferenceNumber(), caller.userId(), newStartTime);
