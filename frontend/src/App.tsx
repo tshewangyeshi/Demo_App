@@ -15,6 +15,7 @@ import AdminAccessRequestsPage from './pages/AdminAccessRequestsPage'
 import AdminAuditLogPage from './pages/AdminAuditLogPage'
 import AdminReportingPage from './pages/AdminReportingPage'
 import AdminTimeTravelPage from './pages/AdminTimeTravelPage'
+import PublicLookupPage from './pages/PublicLookupPage'
 import { ADMIN_ROLES, HOSPITAL_WIDE_ROLES, STAFF_ROLES } from './lib/roles'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/lookup" element={<PublicLookupPage />} />
             <Route
               path="/"
               element={

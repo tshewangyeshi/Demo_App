@@ -68,6 +68,7 @@ export default function Layout() {
             </>
           ) : (
             <>
+              <Link to="/lookup">Find My Appointment</Link>
               <Link to="/login">Log in</Link>
               <Link to="/register">Register</Link>
             </>
