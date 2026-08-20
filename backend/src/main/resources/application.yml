@@ -22,10 +22,6 @@ spring:
     user: ${FLYWAY_DB_USERNAME:postgres}
     password: ${FLYWAY_DB_PASSWORD:}
     locations: classpath:db/migration
-    placeholders:
-      # Consumed by V1__extensions_and_app_role.sql to create the app's
-      # runtime role without ever committing its password to source control.
-      schedulerAppPassword: ${APP_DB_PASSWORD:}
 
   jpa:
     open-in-view: false

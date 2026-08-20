@@ -1,5 +1,6 @@
 package bt.gov.jdwnrh.scheduler.auth;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -30,16 +31,18 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final Clock clock;
 
     public AuthController(AppUserRepository appUserRepository, AuthLookupRepository authLookupRepository,
                            CurrentRoleLookup currentRoleLookup, PasswordEncoder passwordEncoder,
-                           JwtService jwtService, RefreshTokenService refreshTokenService) {
+                           JwtService jwtService, RefreshTokenService refreshTokenService, Clock clock) {
         this.appUserRepository = appUserRepository;
         this.authLookupRepository = authLookupRepository;
         this.currentRoleLookup = currentRoleLookup;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.clock = clock;
     }
 
     @PostMapping("/api/auth/register")
@@ -54,7 +57,8 @@ public class AuthController {
                 passwordEncoder.encode(request.password()),
                 Role.PATIENT,
                 request.firstName(),
-                request.lastName());
+                request.lastName(),
+                clock.instant());
         appUserRepository.save(user);
 
         return issueTokens(user.getId(), Role.PATIENT, null);

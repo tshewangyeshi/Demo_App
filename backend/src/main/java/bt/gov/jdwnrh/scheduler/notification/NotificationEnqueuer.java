@@ -1,5 +1,6 @@
 package bt.gov.jdwnrh.scheduler.notification;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,10 +15,12 @@ public class NotificationEnqueuer {
 
     private final NotificationOutboxRepository repository;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
-    public NotificationEnqueuer(NotificationOutboxRepository repository, ObjectMapper objectMapper) {
+    public NotificationEnqueuer(NotificationOutboxRepository repository, ObjectMapper objectMapper, Clock clock) {
         this.repository = repository;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     public void enqueue(NotificationEventType eventType, UUID appointmentId, String recipientEmail, Map<String, Object> payload) {
@@ -28,6 +31,7 @@ public class NotificationEnqueuer {
             throw new IllegalStateException("Failed to serialize notification payload", e);
         }
 
-        repository.save(new NotificationOutbox(UUID.randomUUID(), appointmentId, eventType, recipientEmail, payloadJson));
+        repository.save(new NotificationOutbox(
+                UUID.randomUUID(), appointmentId, eventType, recipientEmail, payloadJson, clock.instant()));
     }
 }

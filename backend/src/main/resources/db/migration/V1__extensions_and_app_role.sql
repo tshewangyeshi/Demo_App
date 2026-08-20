@@ -13,14 +13,20 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- block manually once via the Neon SQL console/psql as the project's owner
 -- role, then let Flyway continue from V2 (mark V1 as already-applied, or run
 -- with -outOfOrder / baseline as appropriate for your Flyway setup).
--- Password comes from a Flyway placeholder (spring.flyway.placeholders.schedulerAppPassword,
--- sourced from the APP_DB_PASSWORD env var — see application.yml) so the real
--- secret is never committed to source control. Flyway substitutes ${...}
--- before sending this SQL; it is not psql/native Postgres syntax.
+-- The role's real password is deliberately NOT set here via a Flyway
+-- placeholder — templating a secret into migration SQL is a known-awkward
+-- corner of Flyway (its dollar-brace placeholder syntax scans the WHOLE
+-- file, comments included, and can misfire on unrelated dollar-quoted
+-- PL/pgSQL bodies or even example text in a comment) and, more importantly,
+-- migrations are checked-in schema artifacts; a secret doesn't belong
+-- flowing through that pipeline at all. This creates the role with a
+-- clearly-fake, unusable placeholder password — set the real one
+-- immediately after in the SAME session with an ALTER ROLE statement (see
+-- README, "Database" section) before anything connects as this role.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'scheduler_app') THEN
-        EXECUTE format('CREATE ROLE scheduler_app LOGIN PASSWORD %L', '${schedulerAppPassword}');
+        CREATE ROLE scheduler_app LOGIN PASSWORD 'CHANGE_ME_SET_VIA_ALTER_ROLE';
     END IF;
 END
 $$;

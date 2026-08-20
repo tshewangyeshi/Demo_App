@@ -51,6 +51,18 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 		<dependency>
+			<!-- Provides Jackson autoconfiguration (the ObjectMapper bean
+			     NotificationEnqueuer depends on) — spring-boot-starter-webmvc
+			     alone doesn't pull this in the way spring-boot-starter-web
+			     traditionally did. -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+		<dependency>
+			<!-- jackson-databind explicitly, compile scope: NotificationEnqueuer
+			     references ObjectMapper/JsonProcessingException directly, and
+			     spring-boot-starter-json's transitive copy isn't resolving onto
+			     the compile classpath on its own. -->
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>

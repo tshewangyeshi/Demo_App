@@ -38,8 +38,9 @@ public class RefreshTokenService {
     @Transactional
     public String issue(UUID userId) {
         String rawToken = generateRawToken();
+        Instant now = clock.instant();
         RefreshToken entity = new RefreshToken(
-                UUID.randomUUID(), userId, hash(rawToken), clock.instant().plus(REFRESH_TOKEN_TTL));
+                UUID.randomUUID(), userId, hash(rawToken), now.plus(REFRESH_TOKEN_TTL), now);
         repository.save(entity);
         return rawToken;
     }

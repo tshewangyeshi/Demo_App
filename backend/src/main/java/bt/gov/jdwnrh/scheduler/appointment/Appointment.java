@@ -73,25 +73,28 @@ public class Appointment {
     }
 
     public Appointment(UUID id, String referenceNumber, UUID patientId, UUID doctorId,
-                        UUID appointmentTypeId, Instant startTime) {
+                        UUID appointmentTypeId, Instant startTime, Instant now) {
         this.id = id;
         this.referenceNumber = referenceNumber;
         this.patientId = patientId;
         this.doctorId = doctorId;
         this.appointmentTypeId = appointmentTypeId;
         this.startTime = startTime;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     /**
      * Applies a status transition, enforcing the state machine — throws
      * rather than silently writing an impossible transition.
      */
-    public void transitionTo(AppointmentStatus target) {
+    public void transitionTo(AppointmentStatus target, Instant now) {
         if (!status.canTransitionTo(target)) {
             throw new InvalidStatusTransitionException(
                     "Cannot transition appointment " + id + " from " + status + " to " + target);
         }
         this.status = target;
+        this.updatedAt = now;
     }
 
     public UUID getId() {

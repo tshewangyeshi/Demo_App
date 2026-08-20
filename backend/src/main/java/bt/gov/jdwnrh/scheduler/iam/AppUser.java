@@ -68,13 +68,15 @@ public class AppUser {
         // JPA
     }
 
-    public AppUser(UUID id, String email, String passwordHash, Role role, String firstName, String lastName) {
+    public AppUser(UUID id, String email, String passwordHash, Role role, String firstName, String lastName, Instant now) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     public UUID getId() {

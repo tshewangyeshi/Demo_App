@@ -59,12 +59,13 @@ public class NotificationOutbox {
     }
 
     public NotificationOutbox(UUID id, UUID appointmentId, NotificationEventType eventType,
-                               String recipientEmail, String payloadJson) {
+                               String recipientEmail, String payloadJson, Instant now) {
         this.id = id;
         this.appointmentId = appointmentId;
         this.eventType = eventType;
         this.recipientEmail = recipientEmail;
         this.payload = payloadJson;
+        this.createdAt = now;
     }
 
     public enum OutboxStatus {

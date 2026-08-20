@@ -69,13 +69,14 @@ public class AppointmentLifecycleService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found: " + appointmentId));
 
+        Instant now = clock.instant();
         AppointmentStatus previousStatus = appointment.getStatus();
-        appointment.transitionTo(AppointmentStatus.CANCELLED); // frees the slot immediately — the partial exclusion
-        appointmentRepository.save(appointment);               // constraint no longer blocks this range once CANCELLED
+        appointment.transitionTo(AppointmentStatus.CANCELLED, now); // frees the slot immediately — the partial exclusion
+        appointmentRepository.save(appointment);                    // constraint no longer blocks this range once CANCELLED
 
         appointmentHistoryRepository.save(new AppointmentHistory(
                 UUID.randomUUID(), appointment.getId(), previousStatus, AppointmentStatus.CANCELLED,
-                caller.userId(), clock.instant(), "Cancelled"));
+                caller.userId(), now, "Cancelled"));
 
         notifyPatient(appointment, NotificationEventType.CANCELLED, Map.of(
                 "referenceNumber", appointment.getReferenceNumber()));
@@ -100,22 +101,23 @@ public class AppointmentLifecycleService {
             throw new SlotUnavailableException("That time is not available. Please pick another slot.");
         }
 
+        Instant now = clock.instant();
         AppointmentStatus previousStatus = original.getStatus();
-        original.transitionTo(AppointmentStatus.RESCHEDULED); // terminal — drops out of the partial exclusion index, freeing its range
+        original.transitionTo(AppointmentStatus.RESCHEDULED, now); // terminal — drops out of the partial exclusion index, freeing its range
         appointmentRepository.save(original);
 
         appointmentHistoryRepository.save(new AppointmentHistory(
                 UUID.randomUUID(), original.getId(), previousStatus, AppointmentStatus.RESCHEDULED,
-                caller.userId(), clock.instant(), "Rescheduled to a new appointment"));
+                caller.userId(), now, "Rescheduled to a new appointment"));
 
         // Reference number carries forward UNCHANGED — see design doc,
         // "reference_number is not a plain-unique column": the partial
         // unique index allows this because the old row is no longer ACTIVE.
         Appointment rescheduled = new Appointment(
                 UUID.randomUUID(), original.getReferenceNumber(), original.getPatientId(), original.getDoctorId(),
-                original.getAppointmentTypeId(), newStartTime);
+                original.getAppointmentTypeId(), newStartTime, now);
         rescheduled.setRescheduledFromId(original.getId());
-        rescheduled.transitionTo(AppointmentStatus.CONFIRMED);
+        rescheduled.transitionTo(AppointmentStatus.CONFIRMED, now);
 
         try {
             appointmentRepository.saveAndFlush(rescheduled);
@@ -128,7 +130,7 @@ public class AppointmentLifecycleService {
 
         appointmentHistoryRepository.save(new AppointmentHistory(
                 UUID.randomUUID(), rescheduled.getId(), null, AppointmentStatus.CONFIRMED,
-                caller.userId(), clock.instant(), "Rescheduled from " + original.getId()));
+                caller.userId(), now, "Rescheduled from " + original.getId()));
 
         notifyPatient(rescheduled, NotificationEventType.RESCHEDULED, Map.of(
                 "referenceNumber", rescheduled.getReferenceNumber(),

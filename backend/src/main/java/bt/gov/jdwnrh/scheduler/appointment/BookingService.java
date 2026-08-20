@@ -80,10 +80,11 @@ public class BookingService {
             throw new SlotUnavailableException("This slot is no longer available. Please pick another time.");
         }
 
+        Instant now = clock.instant();
         Appointment appointment = new Appointment(
                 UUID.randomUUID(), referenceNumberGenerator.generate(), caller.userId(), doctorId,
-                appointmentTypeId, requestedStart);
-        appointment.transitionTo(AppointmentStatus.CONFIRMED);
+                appointmentTypeId, requestedStart, now);
+        appointment.transitionTo(AppointmentStatus.CONFIRMED, now);
 
         try {
             appointmentRepository.saveAndFlush(appointment);
@@ -97,7 +98,7 @@ public class BookingService {
 
         appointmentHistoryRepository.save(new AppointmentHistory(
                 UUID.randomUUID(), appointment.getId(), null, AppointmentStatus.CONFIRMED,
-                caller.userId(), clock.instant(), "Booked by patient"));
+                caller.userId(), now, "Booked by patient"));
 
         AppUser patient = appUserRepository.findById(appointment.getPatientId())
                 .orElseThrow(() -> new IllegalStateException("Patient disappeared mid-transaction"));
