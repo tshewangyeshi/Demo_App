@@ -50,6 +50,7 @@ export default function Layout() {
                   <Link to="/admin">Admin</Link>
                   <Link to="/admin/staff">Staff</Link>
                   <Link to="/admin/requests">Requests</Link>
+                  <Link to="/admin/reports">Reports</Link>
                 </>
               )}
               {HOSPITAL_WIDE_ROLES.includes(user.role) && <Link to="/admin/audit-log">Audit Log</Link>}

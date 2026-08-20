@@ -194,3 +194,30 @@ export interface AuditLogEntry {
 
 export const listAuditLog = (resourceType?: string) =>
   apiFetch<AuditLogEntry[]>(`/api/admin/audit-log${resourceType ? `?resourceType=${resourceType}` : ''}`)
+
+// --- Operational reporting ---
+
+export interface DoctorLoad {
+  doctorId: string
+  doctorName: string
+  count: number
+}
+
+export interface DayVolume {
+  day: string
+  count: number
+}
+
+export interface ReportSummary {
+  from: string
+  to: string
+  totalAppointments: number
+  cancellationRate: number
+  noShowRate: number
+  byStatus: Record<string, number>
+  byDoctor: DoctorLoad[]
+  byDay: DayVolume[]
+}
+
+export const getReportSummary = (from: string, to: string) =>
+  apiFetch<ReportSummary>(`/api/admin/reports/summary?from=${from}&to=${to}`)
