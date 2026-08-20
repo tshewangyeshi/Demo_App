@@ -51,6 +51,12 @@ app:
     # for local dev against a throwaway database and is deliberately obvious
     # so it's never mistaken for a real secret.
     secret: ${APP_JWT_SECRET:dev-only-secret-change-me-before-any-real-deploy-0123456789}
+  cors:
+    # The SPA's origin — frontend and backend are deliberately on different
+    # domains (Vercel + Railway/Render). Must be an exact origin, never "*",
+    # since credentialed cross-origin requests (the refresh cookie) require
+    # the server to echo back the specific calling origin.
+    allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
 
 logging:
   pattern:

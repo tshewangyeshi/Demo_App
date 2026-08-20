@@ -107,7 +107,7 @@ public class AuthController {
             refreshTokenService.revoke(refreshCookie);
         }
         ResponseCookie cleared = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
-                .httpOnly(true).secure(true).sameSite("Strict").path("/api/auth").maxAge(0).build();
+                .httpOnly(true).secure(true).sameSite("None").path("/api/auth").maxAge(0).build();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cleared.toString()).build();
     }
 
@@ -121,10 +121,16 @@ public class AuthController {
     }
 
     private ResponseCookie buildRefreshCookie(String rawToken) {
+        // SameSite=None (not Strict): the frontend (Vercel) and backend
+        // (Railway/Render) are deliberately on different origins per the
+        // Distribution Plan — a Strict cookie would never be sent on the
+        // SPA's cross-origin fetch to /api/auth/refresh, silently breaking
+        // the refresh flow the moment frontend and backend aren't on the
+        // same domain. None requires Secure, which is already set.
         return ResponseCookie.from(REFRESH_COOKIE_NAME, rawToken)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Strict")
+                .sameSite("None")
                 .path("/api/auth")
                 .maxAge(Duration.ofDays(7))
                 .build();

@@ -1,5 +1,8 @@
 package bt.gov.jdwnrh.scheduler.config;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,6 +12,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import bt.gov.jdwnrh.scheduler.auth.JwtAuthenticationFilter;
 
@@ -18,6 +24,28 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * The refresh cookie is SameSite=None (see AuthController) specifically
+     * because the SPA frontend and this backend are deliberately on
+     * different origins. SameSite=None alone isn't enough — the browser
+     * also refuses to let JS read a cross-origin response with credentials
+     * unless the server echoes back the EXACT calling origin (never "*",
+     * which browsers reject when credentials are involved) plus
+     * Access-Control-Allow-Credentials: true.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origin}") String allowedOrigin) {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true); // required for the browser to send/accept the refresh cookie cross-origin
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
@@ -32,6 +60,7 @@ public class SecurityConfig {
                 // simplified for this build's scope rather than adding full CSRF-token
                 // infrastructure — noted here, not silently skipped.
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {}) // picks up the corsConfigurationSource bean above
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
