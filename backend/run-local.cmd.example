@@ -1,0 +1,23 @@
+@echo off
+REM Template for run-local.cmd — copy this file to run-local.cmd and fill in
+REM your real local Postgres credentials. run-local.cmd is gitignored;
+REM this .example file is the only copy that gets committed.
+REM
+REM Usage:  run-local.cmd          (sets vars in this cmd window, then run mvnw.cmd yourself)
+REM         run-local.cmd run      (sets vars AND starts the app)
+
+REM Only needed if JAVA_HOME doesn't already point at a JDK 21+ install.
+set JAVA_HOME=C:\Path\To\Your\JDK
+
+set FLYWAY_DB_URL=jdbc:postgresql://127.0.0.1:5432/scheduler
+set FLYWAY_DB_USERNAME=postgres
+set FLYWAY_DB_PASSWORD=<your postgres superuser password>
+
+set APP_DB_URL=jdbc:postgresql://127.0.0.1:5432/scheduler
+set APP_DB_PASSWORD=<pick a strong password for scheduler_app>
+
+echo Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*).
+
+if "%1"=="run" (
+    call mvnw.cmd spring-boot:run
+)
