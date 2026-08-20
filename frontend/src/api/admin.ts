@@ -178,3 +178,19 @@ export const approveAccessRequest = (id: string) =>
 
 export const rejectAccessRequest = (id: string, reason?: string) =>
   apiFetch<void>(`/api/admin/access-requests/${id}/reject`, { method: 'PATCH', body: { reason } })
+
+// --- Audit log (HOSPITAL_ADMIN/SUPER_ADMIN only) ---
+
+export interface AuditLogEntry {
+  id: string
+  actorId: string | null
+  action: string
+  resourceType: string
+  resourceId: string | null
+  previousValue: string | null // raw JSON string — see AdminAuditLogController
+  newValue: string | null
+  occurredAt: string
+}
+
+export const listAuditLog = (resourceType?: string) =>
+  apiFetch<AuditLogEntry[]>(`/api/admin/audit-log${resourceType ? `?resourceType=${resourceType}` : ''}`)

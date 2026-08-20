@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import bt.gov.jdwnrh.scheduler.audit.AuditLogger;
 import bt.gov.jdwnrh.scheduler.config.RlsContext;
 import bt.gov.jdwnrh.scheduler.scheduling.Doctor;
 import bt.gov.jdwnrh.scheduler.scheduling.DoctorRepository;
@@ -39,48 +41,61 @@ import bt.gov.jdwnrh.scheduler.scheduling.ScheduleManagementService;
 public class AdminDoctorController {
 
     private final AdminScope adminScope;
+    private final AuditLogger auditLogger;
     private final DoctorRepository doctorRepository;
     private final ScheduleManagementService scheduleManagementService;
 
-    public AdminDoctorController(AdminScope adminScope, DoctorRepository doctorRepository,
+    public AdminDoctorController(AdminScope adminScope, AuditLogger auditLogger, DoctorRepository doctorRepository,
                                   ScheduleManagementService scheduleManagementService) {
         this.adminScope = adminScope;
+        this.auditLogger = auditLogger;
         this.doctorRepository = doctorRepository;
         this.scheduleManagementService = scheduleManagementService;
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<Doctor> updateBio(@PathVariable UUID id, @Valid @RequestBody UpdateBioRequest request) {
-        Doctor doctor = requireScopedDoctor(id);
+        RlsContext caller = adminScope.require();
+        Doctor doctor = requireScopedDoctor(caller, id);
+        String previousBio = doctor.getBio();
         doctor.setBio(request.bio());
-        return ResponseEntity.ok(doctorRepository.save(doctor));
+        doctorRepository.save(doctor);
+        auditLogger.log(caller.userId(), "UPDATE", "DOCTOR", id, Map.of("bio", previousBio == null ? "" : previousBio),
+                Map.of("bio", request.bio() == null ? "" : request.bio()));
+        return ResponseEntity.ok(doctor);
     }
 
     @GetMapping("/{id}/schedule")
     public List<ScheduleBlockResponse> schedule(@PathVariable UUID id) {
-        requireScopedDoctor(id);
+        requireScopedDoctor(adminScope.require(), id);
         return scheduleManagementService.listScheduleBlocks(id).stream().map(ScheduleBlockResponse::from).toList();
     }
 
     @PostMapping("/{id}/schedule")
     public ResponseEntity<ScheduleBlockResponse> addScheduleBlock(@PathVariable UUID id,
                                                                     @Valid @RequestBody AddScheduleBlockRequest request) {
-        requireScopedDoctor(id);
+        RlsContext caller = adminScope.require();
+        requireScopedDoctor(caller, id);
         DoctorSchedule block = scheduleManagementService.addScheduleBlock(
                 id, request.dayOfWeek(), request.startTime(), request.endTime());
+        auditLogger.log(caller.userId(), "CREATE", "DOCTOR_SCHEDULE", block.getId(), null, Map.of(
+                "doctorId", id.toString(), "dayOfWeek", request.dayOfWeek().name(),
+                "startTime", request.startTime().toString(), "endTime", request.endTime().toString()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ScheduleBlockResponse.from(block));
     }
 
     @DeleteMapping("/{id}/schedule/{scheduleId}")
     public ResponseEntity<Void> removeScheduleBlock(@PathVariable UUID id, @PathVariable UUID scheduleId) {
-        requireScopedDoctor(id);
+        RlsContext caller = adminScope.require();
+        requireScopedDoctor(caller, id);
         scheduleManagementService.removeScheduleBlock(scheduleId);
+        auditLogger.log(caller.userId(), "DELETE", "DOCTOR_SCHEDULE", scheduleId, Map.of("doctorId", id.toString()), null);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/exceptions")
     public List<ExceptionResponse> exceptions(@PathVariable UUID id) {
-        requireScopedDoctor(id);
+        requireScopedDoctor(adminScope.require(), id);
         return scheduleManagementService.listExceptions(id).stream()
                 .map(e -> new ExceptionResponse(e.id(), e.start(), e.end(), e.reason())).toList();
     }
@@ -88,23 +103,27 @@ public class AdminDoctorController {
     @PostMapping("/{id}/exceptions")
     public ResponseEntity<ExceptionResponse> addException(@PathVariable UUID id,
                                                             @Valid @RequestBody AddExceptionRequest request) {
-        requireScopedDoctor(id);
+        RlsContext caller = adminScope.require();
+        requireScopedDoctor(caller, id);
         ScheduleException created = scheduleManagementService.addException(id, request.start(), request.end(), request.reason());
+        auditLogger.log(caller.userId(), "CREATE", "DOCTOR_EXCEPTION", created.id(), null, Map.of(
+                "doctorId", id.toString(), "start", request.start().toString(), "end", request.end().toString(), "reason", request.reason()));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ExceptionResponse(created.id(), created.start(), created.end(), created.reason()));
     }
 
     @DeleteMapping("/{id}/exceptions/{exceptionId}")
     public ResponseEntity<Void> removeException(@PathVariable UUID id, @PathVariable UUID exceptionId) {
-        requireScopedDoctor(id);
+        RlsContext caller = adminScope.require();
+        requireScopedDoctor(caller, id);
         scheduleManagementService.removeException(exceptionId);
+        auditLogger.log(caller.userId(), "DELETE", "DOCTOR_EXCEPTION", exceptionId, Map.of("doctorId", id.toString()), null);
         return ResponseEntity.noContent().build();
     }
 
-    private Doctor requireScopedDoctor(UUID doctorId) {
+    private Doctor requireScopedDoctor(RlsContext caller, UUID doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown doctor: " + doctorId));
-        RlsContext caller = adminScope.require();
         adminScope.requireDepartmentAccess(caller, doctor.getDepartmentId());
         return doctor;
     }

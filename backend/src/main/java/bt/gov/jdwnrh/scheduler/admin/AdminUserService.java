@@ -3,11 +3,13 @@ package bt.gov.jdwnrh.scheduler.admin;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import bt.gov.jdwnrh.scheduler.audit.AuditLogger;
 import bt.gov.jdwnrh.scheduler.config.RlsContext;
 import bt.gov.jdwnrh.scheduler.config.RlsSessionInitializer;
 import bt.gov.jdwnrh.scheduler.iam.AppUser;
@@ -27,13 +29,15 @@ public class AdminUserService {
     private final RlsSessionInitializer rlsSessionInitializer;
     private final AppUserRepository appUserRepository;
     private final DoctorRepository doctorRepository;
+    private final AuditLogger auditLogger;
     private final Clock clock;
 
     public AdminUserService(RlsSessionInitializer rlsSessionInitializer, AppUserRepository appUserRepository,
-                             DoctorRepository doctorRepository, Clock clock) {
+                             DoctorRepository doctorRepository, AuditLogger auditLogger, Clock clock) {
         this.rlsSessionInitializer = rlsSessionInitializer;
         this.appUserRepository = appUserRepository;
         this.doctorRepository = doctorRepository;
+        this.auditLogger = auditLogger;
         this.clock = clock;
     }
 
@@ -54,6 +58,9 @@ public class AdminUserService {
             Doctor doctor = doctorRepository.save(new Doctor(UUID.randomUUID(), user.getId(), departmentId, bio, now));
             doctorId = doctor.getId();
         }
+
+        auditLogger.log(caller.userId(), "CREATE", "APP_USER", user.getId(), null, Map.of(
+                "email", email, "role", role.name(), "departmentId", departmentId != null ? departmentId.toString() : "none"));
 
         return new CreatedStaff(user, doctorId);
     }

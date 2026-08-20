@@ -3,6 +3,7 @@ package bt.gov.jdwnrh.scheduler.admin;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import bt.gov.jdwnrh.scheduler.audit.AuditLogger;
 import bt.gov.jdwnrh.scheduler.config.RlsContext;
 import bt.gov.jdwnrh.scheduler.department.AppointmentType;
 import bt.gov.jdwnrh.scheduler.department.AppointmentTypeRepository;
@@ -38,24 +40,27 @@ import bt.gov.jdwnrh.scheduler.scheduling.HolidayRepository;
  * (department -> specialty -> appointment type) plus holidays. Reads stay on
  * the public DepartmentController/HolidayRepository — this is writes only.
  * None of these tables carry RLS (see AdminScope's javadoc), so AdminScope is
- * the actual gate.
+ * the actual gate. Every write also logs to AuditLog (see MVP Scope's
+ * "Admin ... audit logs").
  */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminReferenceDataController {
 
     private final AdminScope adminScope;
+    private final AuditLogger auditLogger;
     private final DepartmentRepository departmentRepository;
     private final SpecialtyRepository specialtyRepository;
     private final AppointmentTypeRepository appointmentTypeRepository;
     private final HolidayRepository holidayRepository;
     private final Clock clock;
 
-    public AdminReferenceDataController(AdminScope adminScope, DepartmentRepository departmentRepository,
+    public AdminReferenceDataController(AdminScope adminScope, AuditLogger auditLogger, DepartmentRepository departmentRepository,
                                          SpecialtyRepository specialtyRepository,
                                          AppointmentTypeRepository appointmentTypeRepository,
                                          HolidayRepository holidayRepository, Clock clock) {
         this.adminScope = adminScope;
+        this.auditLogger = auditLogger;
         this.departmentRepository = departmentRepository;
         this.specialtyRepository = specialtyRepository;
         this.appointmentTypeRepository = appointmentTypeRepository;
@@ -67,24 +72,34 @@ public class AdminReferenceDataController {
 
     @PostMapping("/departments")
     public ResponseEntity<Department> createDepartment(@Valid @RequestBody NameRequest request) {
-        adminScope.requireHospitalWide(adminScope.require());
+        RlsContext caller = adminScope.require();
+        adminScope.requireHospitalWide(caller);
         Department department = departmentRepository.save(new Department(UUID.randomUUID(), request.name(), clock.instant()));
+        auditLogger.log(caller.userId(), "CREATE", "DEPARTMENT", department.getId(), null, Map.of("name", department.getName()));
         return ResponseEntity.status(HttpStatus.CREATED).body(department);
     }
 
     @PatchMapping("/departments/{id}")
     public ResponseEntity<Department> renameDepartment(@PathVariable UUID id, @Valid @RequestBody NameRequest request) {
-        adminScope.requireHospitalWide(adminScope.require());
+        RlsContext caller = adminScope.require();
+        adminScope.requireHospitalWide(caller);
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown department: " + id));
+        String previousName = department.getName();
         department.setName(request.name());
-        return ResponseEntity.ok(departmentRepository.save(department));
+        departmentRepository.save(department);
+        auditLogger.log(caller.userId(), "UPDATE", "DEPARTMENT", id, Map.of("name", previousName), Map.of("name", request.name()));
+        return ResponseEntity.ok(department);
     }
 
     @DeleteMapping("/departments/{id}")
     public ResponseEntity<Void> deleteDepartment(@PathVariable UUID id) {
-        adminScope.requireHospitalWide(adminScope.require());
+        RlsContext caller = adminScope.require();
+        adminScope.requireHospitalWide(caller);
+        Department department = departmentRepository.findById(id).orElse(null);
         departmentRepository.deleteById(id);
+        auditLogger.log(caller.userId(), "DELETE", "DEPARTMENT", id,
+                department != null ? Map.of("name", department.getName()) : null, null);
         return ResponseEntity.noContent().build();
     }
 
@@ -96,24 +111,32 @@ public class AdminReferenceDataController {
         adminScope.requireDepartmentAccess(caller, request.departmentId());
         Specialty specialty = specialtyRepository.save(
                 new Specialty(UUID.randomUUID(), request.departmentId(), request.name(), clock.instant()));
+        auditLogger.log(caller.userId(), "CREATE", "SPECIALTY", specialty.getId(), null,
+                Map.of("departmentId", request.departmentId().toString(), "name", request.name()));
         return ResponseEntity.status(HttpStatus.CREATED).body(specialty);
     }
 
     @PatchMapping("/specialties/{id}")
     public ResponseEntity<Specialty> renameSpecialty(@PathVariable UUID id, @Valid @RequestBody NameRequest request) {
+        RlsContext caller = adminScope.require();
         Specialty specialty = specialtyRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown specialty: " + id));
-        adminScope.requireDepartmentAccess(adminScope.require(), specialty.getDepartmentId());
+        adminScope.requireDepartmentAccess(caller, specialty.getDepartmentId());
+        String previousName = specialty.getName();
         specialty.setName(request.name());
-        return ResponseEntity.ok(specialtyRepository.save(specialty));
+        specialtyRepository.save(specialty);
+        auditLogger.log(caller.userId(), "UPDATE", "SPECIALTY", id, Map.of("name", previousName), Map.of("name", request.name()));
+        return ResponseEntity.ok(specialty);
     }
 
     @DeleteMapping("/specialties/{id}")
     public ResponseEntity<Void> deleteSpecialty(@PathVariable UUID id) {
+        RlsContext caller = adminScope.require();
         Specialty specialty = specialtyRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown specialty: " + id));
-        adminScope.requireDepartmentAccess(adminScope.require(), specialty.getDepartmentId());
+        adminScope.requireDepartmentAccess(caller, specialty.getDepartmentId());
         specialtyRepository.deleteById(id);
+        auditLogger.log(caller.userId(), "DELETE", "SPECIALTY", id, Map.of("name", specialty.getName()), null);
         return ResponseEntity.noContent().build();
     }
 
@@ -121,37 +144,49 @@ public class AdminReferenceDataController {
 
     @PostMapping("/appointment-types")
     public ResponseEntity<AppointmentType> createAppointmentType(@Valid @RequestBody CreateAppointmentTypeRequest request) {
+        RlsContext caller = adminScope.require();
         Specialty specialty = specialtyRepository.findById(request.specialtyId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown specialty: " + request.specialtyId()));
-        adminScope.requireDepartmentAccess(adminScope.require(), specialty.getDepartmentId());
+        adminScope.requireDepartmentAccess(caller, specialty.getDepartmentId());
         AppointmentType type = appointmentTypeRepository.save(new AppointmentType(
                 UUID.randomUUID(), request.specialtyId(), request.name(),
                 request.durationMinutes(), request.bufferMinutes(), clock.instant()));
+        auditLogger.log(caller.userId(), "CREATE", "APPOINTMENT_TYPE", type.getId(), null, Map.of(
+                "specialtyId", request.specialtyId().toString(), "name", request.name(),
+                "durationMinutes", request.durationMinutes(), "bufferMinutes", request.bufferMinutes()));
         return ResponseEntity.status(HttpStatus.CREATED).body(type);
     }
 
     @PatchMapping("/appointment-types/{id}")
     public ResponseEntity<AppointmentType> updateAppointmentType(@PathVariable UUID id,
                                                                    @Valid @RequestBody CreateAppointmentTypeRequest request) {
+        RlsContext caller = adminScope.require();
         AppointmentType type = appointmentTypeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown appointment type: " + id));
         Specialty specialty = specialtyRepository.findById(type.getSpecialtyId())
                 .orElseThrow(() -> new IllegalStateException("Specialty disappeared: " + type.getSpecialtyId()));
-        adminScope.requireDepartmentAccess(adminScope.require(), specialty.getDepartmentId());
+        adminScope.requireDepartmentAccess(caller, specialty.getDepartmentId());
+        Map<String, Object> previous = Map.of("name", type.getName(),
+                "durationMinutes", type.getDurationMinutes(), "bufferMinutes", type.getBufferMinutes());
         type.setName(request.name());
         type.setDurationMinutes(request.durationMinutes());
         type.setBufferMinutes(request.bufferMinutes());
-        return ResponseEntity.ok(appointmentTypeRepository.save(type));
+        appointmentTypeRepository.save(type);
+        auditLogger.log(caller.userId(), "UPDATE", "APPOINTMENT_TYPE", id, previous, Map.of(
+                "name", request.name(), "durationMinutes", request.durationMinutes(), "bufferMinutes", request.bufferMinutes()));
+        return ResponseEntity.ok(type);
     }
 
     @DeleteMapping("/appointment-types/{id}")
     public ResponseEntity<Void> deleteAppointmentType(@PathVariable UUID id) {
+        RlsContext caller = adminScope.require();
         AppointmentType type = appointmentTypeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown appointment type: " + id));
         Specialty specialty = specialtyRepository.findById(type.getSpecialtyId())
                 .orElseThrow(() -> new IllegalStateException("Specialty disappeared: " + type.getSpecialtyId()));
-        adminScope.requireDepartmentAccess(adminScope.require(), specialty.getDepartmentId());
+        adminScope.requireDepartmentAccess(caller, specialty.getDepartmentId());
         appointmentTypeRepository.deleteById(id);
+        auditLogger.log(caller.userId(), "DELETE", "APPOINTMENT_TYPE", id, Map.of("name", type.getName()), null);
         return ResponseEntity.noContent().build();
     }
 
@@ -173,20 +208,25 @@ public class AdminReferenceDataController {
         }
         Holiday holiday = holidayRepository.save(new Holiday(
                 UUID.randomUUID(), request.departmentId(), request.holidayDate(), request.name(), clock.instant()));
+        auditLogger.log(caller.userId(), "CREATE", "HOLIDAY", holiday.getId(), null, Map.of(
+                "departmentId", request.departmentId() != null ? request.departmentId().toString() : "hospital-wide",
+                "holidayDate", request.holidayDate().toString(), "name", request.name()));
         return ResponseEntity.status(HttpStatus.CREATED).body(holiday);
     }
 
     @DeleteMapping("/holidays/{id}")
     public ResponseEntity<Void> deleteHoliday(@PathVariable UUID id) {
+        RlsContext caller = adminScope.require();
         Holiday holiday = holidayRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown holiday: " + id));
-        RlsContext caller = adminScope.require();
         if (holiday.getDepartmentId() == null) {
             adminScope.requireHospitalWide(caller);
         } else {
             adminScope.requireDepartmentAccess(caller, holiday.getDepartmentId());
         }
         holidayRepository.deleteById(id);
+        auditLogger.log(caller.userId(), "DELETE", "HOLIDAY", id,
+                Map.of("holidayDate", holiday.getHolidayDate().toString(), "name", holiday.getName()), null);
         return ResponseEntity.noContent().build();
     }
 

@@ -2,12 +2,14 @@ package bt.gov.jdwnrh.scheduler.iam;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import bt.gov.jdwnrh.scheduler.admin.AdminUserService;
+import bt.gov.jdwnrh.scheduler.audit.AuditLogger;
 import bt.gov.jdwnrh.scheduler.auth.AuthLookupRepository;
 import bt.gov.jdwnrh.scheduler.config.RlsContext;
 import bt.gov.jdwnrh.scheduler.config.RlsSessionInitializer;
@@ -27,14 +29,17 @@ public class StaffAccessRequestService {
     private final StaffAccessRequestRepository repository;
     private final AdminUserService adminUserService;
     private final AuthLookupRepository authLookupRepository;
+    private final AuditLogger auditLogger;
     private final Clock clock;
 
     public StaffAccessRequestService(RlsSessionInitializer rlsSessionInitializer, StaffAccessRequestRepository repository,
-                                      AdminUserService adminUserService, AuthLookupRepository authLookupRepository, Clock clock) {
+                                      AdminUserService adminUserService, AuthLookupRepository authLookupRepository,
+                                      AuditLogger auditLogger, Clock clock) {
         this.rlsSessionInitializer = rlsSessionInitializer;
         this.repository = repository;
         this.adminUserService = adminUserService;
         this.authLookupRepository = authLookupRepository;
+        this.auditLogger = auditLogger;
         this.clock = clock;
     }
 
@@ -64,6 +69,9 @@ public class StaffAccessRequestService {
         request.approve(caller.userId(), clock.instant());
         repository.save(request);
 
+        auditLogger.log(caller.userId(), "APPROVE", "ACCESS_REQUEST", requestId,
+                Map.of("status", "PENDING"), Map.of("status", "APPROVED", "createdUserId", created.user().getId().toString()));
+
         return created;
     }
 
@@ -79,5 +87,8 @@ public class StaffAccessRequestService {
 
         request.reject(caller.userId(), reason, clock.instant());
         repository.save(request);
+
+        auditLogger.log(caller.userId(), "REJECT", "ACCESS_REQUEST", requestId,
+                Map.of("status", "PENDING"), Map.of("status", "REJECTED", "reason", reason == null ? "" : reason));
     }
 }

@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ADMIN_ROLES, ROLE_LABELS, STAFF_ROLES } from '../lib/roles'
+import { ADMIN_ROLES, HOSPITAL_WIDE_ROLES, ROLE_LABELS, STAFF_ROLES } from '../lib/roles'
 
 const navStyle: React.CSSProperties = {
   display: 'flex',
@@ -52,6 +52,7 @@ export default function Layout() {
                   <Link to="/admin/requests">Requests</Link>
                 </>
               )}
+              {HOSPITAL_WIDE_ROLES.includes(user.role) && <Link to="/admin/audit-log">Audit Log</Link>}
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
                 {user.firstName} · {ROLE_LABELS[user.role]}
               </span>
