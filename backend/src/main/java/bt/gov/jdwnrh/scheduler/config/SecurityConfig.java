@@ -66,6 +66,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/departments/**", "/api/doctors/**", "/api/availability/**").permitAll()
                         .requestMatchers("/api/status/**", "/api/lookup/**").permitAll() // E1 status page, E2 public lookup
+                        // Path-prefix gates by role — fine-grained scoping (e.g. a DEPARTMENT_ADMIN
+                        // only touching their own department) happens inside each controller/service
+                        // via CurrentUser, same as RLS does for row-level access.
+                        .requestMatchers("/api/admin/**").hasAnyRole("DEPARTMENT_ADMIN", "HOSPITAL_ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/api/staff/**").hasAnyRole("NURSE", "RECEPTIONIST", "DEPARTMENT_ADMIN", "HOSPITAL_ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/api/doctor-portal/**").hasRole("DOCTOR")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

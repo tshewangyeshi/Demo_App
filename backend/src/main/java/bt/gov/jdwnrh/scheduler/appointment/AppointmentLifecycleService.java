@@ -139,6 +139,31 @@ public class AppointmentLifecycleService {
         return rescheduled;
     }
 
+    /**
+     * The staff/doctor workflow (CHECKED_IN -> WAITING -> IN_CONSULTATION ->
+     * COMPLETED, or CONFIRMED -> NO_SHOW) — same RLS-scoped lookup and
+     * enforced state machine as cancel/reschedule, just without the
+     * cancellation-specific slot-freeing or patient notification.
+     */
+    @Transactional
+    public Appointment transition(UUID appointmentId, AppointmentStatus target, String note) {
+        var caller = currentUser.require();
+        rlsSessionInitializer.applyCurrentContext(caller);
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found: " + appointmentId));
+
+        Instant now = clock.instant();
+        AppointmentStatus previousStatus = appointment.getStatus();
+        appointment.transitionTo(target, now);
+        appointmentRepository.save(appointment);
+
+        appointmentHistoryRepository.save(new AppointmentHistory(
+                UUID.randomUUID(), appointment.getId(), previousStatus, target, caller.userId(), now, note));
+
+        return appointment;
+    }
+
     private void notifyPatient(Appointment appointment, NotificationEventType eventType, Map<String, Object> extra) {
         AppUser patient = appUserRepository.findById(appointment.getPatientId())
                 .orElseThrow(() -> new IllegalStateException("Patient disappeared: " + appointment.getPatientId()));

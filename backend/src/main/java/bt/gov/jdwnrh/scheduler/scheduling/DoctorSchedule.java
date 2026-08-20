@@ -46,7 +46,7 @@ public class DoctorSchedule {
         // JPA
     }
 
-    public DoctorSchedule(UUID id, UUID doctorId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
+    public DoctorSchedule(UUID id, UUID doctorId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Instant now) {
         if (!endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("endTime must be after startTime");
         }
@@ -55,6 +55,7 @@ public class DoctorSchedule {
         this.dayOfWeekValue = dayOfWeek.getValue() % 7; // java DayOfWeek: Mon=1..Sun=7 -> our 0=Sun..6=Sat
         this.startTime = startTime;
         this.endTime = endTime;
+        this.createdAt = now;
     }
 
     public UUID getId() {

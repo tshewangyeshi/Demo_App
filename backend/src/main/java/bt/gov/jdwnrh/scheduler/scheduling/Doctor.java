@@ -30,10 +30,12 @@ public class Doctor {
         // JPA
     }
 
-    public Doctor(UUID id, UUID userId, UUID departmentId) {
+    public Doctor(UUID id, UUID userId, UUID departmentId, String bio, Instant now) {
         this.id = id;
         this.userId = userId;
         this.departmentId = departmentId;
+        this.bio = bio;
+        this.createdAt = now;
     }
 
     public UUID getId() {
@@ -46,5 +48,13 @@ public class Doctor {
 
     public UUID getDepartmentId() {
         return departmentId;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 }

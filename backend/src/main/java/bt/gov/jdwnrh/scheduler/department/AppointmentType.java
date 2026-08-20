@@ -35,12 +35,13 @@ public class AppointmentType {
         // JPA
     }
 
-    public AppointmentType(UUID id, UUID specialtyId, String name, int durationMinutes, int bufferMinutes) {
+    public AppointmentType(UUID id, UUID specialtyId, String name, int durationMinutes, int bufferMinutes, Instant now) {
         this.id = id;
         this.specialtyId = specialtyId;
         this.name = name;
         this.durationMinutes = durationMinutes;
         this.bufferMinutes = bufferMinutes;
+        this.createdAt = now;
     }
 
     public UUID getId() {
@@ -53,6 +54,18 @@ public class AppointmentType {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDurationMinutes(int durationMinutes) {
+        this.durationMinutes = durationMinutes;
+    }
+
+    public void setBufferMinutes(int bufferMinutes) {
+        this.bufferMinutes = bufferMinutes;
     }
 
     public Duration duration() {

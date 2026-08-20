@@ -33,11 +33,12 @@ public class Holiday {
         // JPA
     }
 
-    public Holiday(UUID id, UUID departmentId, LocalDate holidayDate, String name) {
+    public Holiday(UUID id, UUID departmentId, LocalDate holidayDate, String name, Instant now) {
         this.id = id;
         this.departmentId = departmentId;
         this.holidayDate = holidayDate;
         this.name = name;
+        this.createdAt = now;
     }
 
     public UUID getId() {

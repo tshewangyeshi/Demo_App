@@ -25,9 +25,10 @@ public class Department {
         // JPA
     }
 
-    public Department(UUID id, String name) {
+    public Department(UUID id, String name, Instant now) {
         this.id = id;
         this.name = name;
+        this.createdAt = now;
     }
 
     public UUID getId() {
@@ -36,5 +37,9 @@ public class Department {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -28,10 +28,11 @@ public class Specialty {
         // JPA
     }
 
-    public Specialty(UUID id, UUID departmentId, String name) {
+    public Specialty(UUID id, UUID departmentId, String name, Instant now) {
         this.id = id;
         this.departmentId = departmentId;
         this.name = name;
+        this.createdAt = now;
     }
 
     public UUID getId() {
@@ -44,5 +45,9 @@ public class Specialty {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
