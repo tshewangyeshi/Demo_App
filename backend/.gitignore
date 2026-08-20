@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local secrets ###
+# Contains real DB/JWT passwords for local dev — never commit this.
+run-local.*
+!run-local.*.example

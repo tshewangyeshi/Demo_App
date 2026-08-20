@@ -1,0 +1,26 @@
+# Template for run-local.ps1 — copy this file to run-local.ps1 and fill in
+# your real local Postgres credentials. run-local.ps1 is gitignored;
+# this .example file is the only copy that gets committed.
+#
+# Usage:  . .\run-local.ps1        (dot-source to set vars in your session)
+#         .\run-local.ps1 -Run     (set vars AND start the app)
+
+param(
+    [switch]$Run
+)
+
+# Only needed if JAVA_HOME doesn't already point at a JDK 21+ install.
+$env:JAVA_HOME = "C:\Path\To\Your\JDK"
+
+$env:FLYWAY_DB_URL = "jdbc:postgresql://127.0.0.1:5432/scheduler"
+$env:FLYWAY_DB_USERNAME = "postgres"
+$env:FLYWAY_DB_PASSWORD = "<your postgres superuser password>"
+
+$env:APP_DB_URL = "jdbc:postgresql://127.0.0.1:5432/scheduler"
+$env:APP_DB_PASSWORD = "<pick a strong password for scheduler_app>"
+
+Write-Host "Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*)."
+
+if ($Run) {
+    & .\mvnw.cmd spring-boot:run
+}
