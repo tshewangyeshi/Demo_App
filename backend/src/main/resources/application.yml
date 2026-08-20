@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: scheduler
+
+  # Two connection roles by design (see docs/designs/jdwnrh-scheduler.md,
+  # "RLS only binds if the app connects as a non-owner role"):
+  #   - flyway (migrations) runs as the schema-OWNING role
+  #   - the app's runtime datasource connects as APP_DB_USERNAME, a
+  #     separate non-owner role with FORCE ROW LEVEL SECURITY in effect.
+  # Both point at the same Neon DIRECT (non-pooled) connection string —
+  # never the pgbouncer-pooled one, per the RLS SET LOCAL requirement.
+  datasource:
+    url: ${APP_DB_URL:jdbc:postgresql://localhost:5432/scheduler}
+    username: ${APP_DB_USERNAME:scheduler_app}
+    password: ${APP_DB_PASSWORD:}
+
+  flyway:
+    # Runs as the schema-OWNING role — separate credentials from the app's
+    # runtime datasource above, since Flyway needs CREATE ROLE/DDL privileges
+    # the low-privilege scheduler_app role deliberately does not have.
+    url: ${FLYWAY_DB_URL:jdbc:postgresql://localhost:5432/scheduler}
+    user: ${FLYWAY_DB_USERNAME:postgres}
+    password: ${FLYWAY_DB_PASSWORD:}
+    locations: classpath:db/migration
+    placeholders:
+      # Consumed by V1__extensions_and_app_role.sql to create the app's
+      # runtime role without ever committing its password to source control.
+      schedulerAppPassword: ${APP_DB_PASSWORD:}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Explicitly off — see docs/designs/jdwnrh-scheduler.md,
+        # "Hibernate's second-level cache must stay disabled": L2 cache has
+        # no concept of the per-request RLS session variables, so a cached
+        # entity can leak across role/department boundaries.
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  pattern:
+    # Structured logging groundwork (see design doc "Observability"): every
+    # log line carries the request correlation ID once the MDC filter lands.
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] %-5level %logger{36} - %msg%n"
