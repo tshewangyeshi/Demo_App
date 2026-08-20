@@ -92,7 +92,9 @@ CREATE TABLE appointment (
     patient_id          UUID NOT NULL REFERENCES app_user(id),
     doctor_id           UUID NOT NULL REFERENCES doctor(id),
     appointment_type_id UUID NOT NULL REFERENCES appointment_type(id),
-    appointment_range   TSTZRANGE NOT NULL, -- duration + buffer already padded in, per design doc
+    start_time          TIMESTAMPTZ NOT NULL, -- what Java code reads/writes; UTC
+    end_time            TIMESTAMPTZ NOT NULL, -- start_time + appointment_type's (duration + buffer) — maintained by trigger, see V4
+    appointment_range   TSTZRANGE NOT NULL,   -- derived from start_time/end_time by trigger; only Postgres (the exclusion constraint) reads this directly
     status              TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN
                             ('PENDING','CONFIRMED','CHECKED_IN','WAITING',
                              'IN_CONSULTATION','COMPLETED','CANCELLED',
