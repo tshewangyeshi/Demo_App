@@ -49,6 +49,7 @@ export default function Layout() {
                 <>
                   <Link to="/admin">Admin</Link>
                   <Link to="/admin/staff">Staff</Link>
+                  <Link to="/admin/requests">Requests</Link>
                 </>
               )}
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>

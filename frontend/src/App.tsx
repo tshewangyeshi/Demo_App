@@ -11,6 +11,7 @@ import DoctorPortalPage from './pages/DoctorPortalPage'
 import AdminReferenceDataPage from './pages/AdminReferenceDataPage'
 import AdminStaffPage from './pages/AdminStaffPage'
 import AdminDoctorSchedulePage from './pages/AdminDoctorSchedulePage'
+import AdminAccessRequestsPage from './pages/AdminAccessRequestsPage'
 import { ADMIN_ROLES, STAFF_ROLES } from './lib/roles'
 
 export default function App() {
@@ -74,6 +75,14 @@ export default function App() {
               element={
                 <ProtectedRoute roles={ADMIN_ROLES}>
                   <AdminDoctorSchedulePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/requests"
+              element={
+                <ProtectedRoute roles={ADMIN_ROLES}>
+                  <AdminAccessRequestsPage />
                 </ProtectedRoute>
               }
             />

@@ -151,3 +151,30 @@ export const addDoctorException = (doctorId: string, start: string, end: string,
 
 export const removeDoctorException = (doctorId: string, exceptionId: string) =>
   apiFetch<void>(`/api/admin/doctors/${doctorId}/exceptions/${exceptionId}`, { method: 'DELETE' })
+
+// --- Staff/doctor access requests (public signup -> admin review) ---
+
+export type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface AccessRequest {
+  id: string
+  email: string
+  requestedRole: Role
+  departmentId: string
+  firstName: string
+  lastName: string
+  bio: string | null
+  status: AccessRequestStatus
+  createdAt: string
+  reviewedAt: string | null
+  rejectionReason: string | null
+}
+
+export const listAccessRequests = (status?: AccessRequestStatus) =>
+  apiFetch<AccessRequest[]>(`/api/admin/access-requests${status ? `?status=${status}` : ''}`)
+
+export const approveAccessRequest = (id: string) =>
+  apiFetch<void>(`/api/admin/access-requests/${id}/approve`, { method: 'PATCH' })
+
+export const rejectAccessRequest = (id: string, reason?: string) =>
+  apiFetch<void>(`/api/admin/access-requests/${id}/reject`, { method: 'PATCH', body: { reason } })
