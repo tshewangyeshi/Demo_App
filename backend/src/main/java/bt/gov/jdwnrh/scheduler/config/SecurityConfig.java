@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .cors(cors -> {}) // picks up the corsConfigurationSource bean above
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/me").authenticated() // carve-out: matched before the broader permitAll below
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/departments/**", "/api/doctors/**", "/api/availability/**").permitAll()
                         .requestMatchers("/api/status/**", "/api/lookup/**").permitAll() // E1 status page, E2 public lookup

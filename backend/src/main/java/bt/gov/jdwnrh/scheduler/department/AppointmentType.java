@@ -60,8 +60,16 @@ public class AppointmentType {
         this.name = name;
     }
 
+    public int getDurationMinutes() {
+        return durationMinutes;
+    }
+
     public void setDurationMinutes(int durationMinutes) {
         this.durationMinutes = durationMinutes;
+    }
+
+    public int getBufferMinutes() {
+        return bufferMinutes;
     }
 
     public void setBufferMinutes(int bufferMinutes) {

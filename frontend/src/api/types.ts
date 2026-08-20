@@ -58,3 +58,24 @@ export interface AppointmentResponse {
   endTime: string
   status: AppointmentStatus
 }
+
+/** Used by the staff daily queue and doctor portal — see backend AppointmentWithPatientResponse. */
+export interface AppointmentWithPatientResponse {
+  id: string
+  referenceNumber: string
+  doctorId: string
+  patientId: string
+  patientName: string | null
+  startTime: string
+  endTime: string
+  status: AppointmentStatus
+}
+
+export interface MeResponse {
+  id: string
+  email: string
+  role: Role
+  departmentId: string | null
+  firstName: string
+  lastName: string
+}

@@ -1,6 +1,6 @@
 import { apiFetch } from './client'
 import { setAccessToken } from './tokenStore'
-import type { AccessTokenResponse } from './types'
+import type { AccessTokenResponse, MeResponse } from './types'
 
 export async function register(email: string, password: string, firstName: string, lastName: string): Promise<void> {
   const result = await apiFetch<AccessTokenResponse>('/api/auth/register', {
@@ -35,3 +35,5 @@ export async function tryRestoreSession(): Promise<boolean> {
     return false
   }
 }
+
+export const getMe = () => apiFetch<MeResponse>('/api/auth/me')

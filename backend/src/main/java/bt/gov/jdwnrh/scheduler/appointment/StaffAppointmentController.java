@@ -34,8 +34,8 @@ public class StaffAppointmentController {
     }
 
     @GetMapping("/appointments")
-    public List<AppointmentResponse> dailyQueue(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return queryService.listForDay(date).stream().map(AppointmentResponse::from).toList();
+    public List<AppointmentWithPatientResponse> dailyQueue(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return queryService.listForDayWithPatientNames(date);
     }
 
     @PatchMapping("/appointments/{id}/check-in")

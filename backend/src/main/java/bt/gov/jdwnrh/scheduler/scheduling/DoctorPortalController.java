@@ -31,6 +31,7 @@ import bt.gov.jdwnrh.scheduler.appointment.AppointmentNotFoundException;
 import bt.gov.jdwnrh.scheduler.appointment.AppointmentQueryService;
 import bt.gov.jdwnrh.scheduler.appointment.AppointmentResponse;
 import bt.gov.jdwnrh.scheduler.appointment.AppointmentStatus;
+import bt.gov.jdwnrh.scheduler.appointment.AppointmentWithPatientResponse;
 import bt.gov.jdwnrh.scheduler.appointment.InvalidStatusTransitionException;
 import bt.gov.jdwnrh.scheduler.config.CurrentUser;
 
@@ -62,8 +63,8 @@ public class DoctorPortalController {
     }
 
     @GetMapping("/appointments")
-    public List<AppointmentResponse> myDay(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return appointmentQueryService.listForDay(date).stream().map(AppointmentResponse::from).toList();
+    public List<AppointmentWithPatientResponse> myDay(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return appointmentQueryService.listForDayWithPatientNames(date);
     }
 
     @PatchMapping("/appointments/{id}/start-consultation")

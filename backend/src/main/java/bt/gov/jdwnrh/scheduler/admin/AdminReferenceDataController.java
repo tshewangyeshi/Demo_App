@@ -2,6 +2,7 @@ package bt.gov.jdwnrh.scheduler.admin;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -13,11 +14,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import bt.gov.jdwnrh.scheduler.config.RlsContext;
@@ -153,6 +156,12 @@ public class AdminReferenceDataController {
     }
 
     // --- Holiday: department-scoped, or hospital-wide (departmentId null) for HOSPITAL_ADMIN/SUPER_ADMIN ---
+
+    @GetMapping("/holidays")
+    public List<Holiday> listHolidays(@RequestParam UUID departmentId) {
+        adminScope.requireDepartmentAccess(adminScope.require(), departmentId);
+        return holidayRepository.findByDepartmentIdOrDepartmentIdIsNullOrderByHolidayDate(departmentId);
+    }
 
     @PostMapping("/holidays")
     public ResponseEntity<Holiday> createHoliday(@Valid @RequestBody CreateHolidayRequest request) {

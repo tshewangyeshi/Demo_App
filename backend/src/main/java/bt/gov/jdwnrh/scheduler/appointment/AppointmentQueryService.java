@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -22,12 +24,14 @@ public class AppointmentQueryService {
     private final RlsSessionInitializer rlsSessionInitializer;
     private final CurrentUser currentUser;
     private final AppointmentRepository appointmentRepository;
+    private final PatientNameRepository patientNameRepository;
 
     public AppointmentQueryService(RlsSessionInitializer rlsSessionInitializer, CurrentUser currentUser,
-                                    AppointmentRepository appointmentRepository) {
+                                    AppointmentRepository appointmentRepository, PatientNameRepository patientNameRepository) {
         this.rlsSessionInitializer = rlsSessionInitializer;
         this.currentUser = currentUser;
         this.appointmentRepository = appointmentRepository;
+        this.patientNameRepository = patientNameRepository;
     }
 
     @Transactional(readOnly = true)
@@ -40,6 +44,33 @@ public class AppointmentQueryService {
     @Transactional(readOnly = true)
     public List<Appointment> listForDay(LocalDate date) {
         rlsSessionInitializer.applyCurrentContext(currentUser.require());
+        return findByDay(date);
+    }
+
+    /**
+     * Same as listForDay, but joined with the patient's name — needs its own
+     * @Transactional method (not two separate calls from a controller)
+     * because get_visible_patient_names (see V15) reads the app.current_role
+     * SET LOCAL session variable, which does not survive past the
+     * transaction that set it.
+     */
+    @Transactional(readOnly = true)
+    public List<AppointmentWithPatientResponse> listForDayWithPatientNames(LocalDate date) {
+        rlsSessionInitializer.applyCurrentContext(currentUser.require());
+        List<Appointment> appointments = findByDay(date);
+
+        Map<java.util.UUID, String> namesByPatientId = patientNameRepository.findVisible().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        PatientNameRepository.PatientName::patientId,
+                        p -> p.firstName() + " " + p.lastName()));
+
+        Function<Appointment, AppointmentWithPatientResponse> toResponse = a ->
+                AppointmentWithPatientResponse.from(a, namesByPatientId.get(a.getPatientId()));
+
+        return appointments.stream().map(toResponse).toList();
+    }
+
+    private List<Appointment> findByDay(LocalDate date) {
         Instant dayStart = date.atStartOfDay(HOSPITAL_ZONE).toInstant();
         Instant dayEnd = date.plusDays(1).atStartOfDay(HOSPITAL_ZONE).toInstant();
         return appointmentRepository.findByStartTimeGreaterThanEqualAndStartTimeLessThan(

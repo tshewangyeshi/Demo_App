@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../api/client'
+import { homePathForRole } from '../lib/roles'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -16,8 +17,8 @@ export default function LoginPage() {
     setError(null)
     setSubmitting(true)
     try {
-      await login(email, password)
-      navigate('/')
+      const me = await login(email, password)
+      navigate(homePathForRole(me.role))
     } catch (err) {
       // Never a raw 401 — a clear, actionable message (see design doc, Interaction States).
       setError(err instanceof ApiError && err.status === 401
