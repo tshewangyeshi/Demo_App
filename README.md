@@ -44,6 +44,20 @@ cd backend
 ./mvnw compile   # or test, or spring-boot:run
 ```
 
+## Frontend
+
+React + Vite + TypeScript SPA, calling the backend REST API directly.
+
+```bash
+cd frontend
+npm install
+npm run dev   # starts on http://localhost:5173, proxies /api to http://localhost:8080
+```
+
+The dev server proxies `/api/*` to the backend (see `vite.config.ts`) so requests are same-origin during local development — no CORS/cookie setup needed to run both locally. A production build talking to a deployed backend on a different origin relies on the backend's CORS config (`APP_CORS_ALLOWED_ORIGIN`, see `SecurityConfig`) and the refresh cookie's `SameSite=None` — both already wired for a genuinely cross-origin deployment (Vercel frontend + Railway/Render backend).
+
+The access token lives in memory only (never localStorage) — see `src/api/tokenStore.ts`. A page reload always re-derives it from the httpOnly refresh cookie via `/api/auth/refresh`.
+
 ## Status
 
-Walking-skeleton milestone in progress (patient role, one department, full booking-correctness core) — see "Next Steps" in the design doc for the build order.
+Walking-skeleton milestone: patient role, one department, full booking-correctness core, end-to-end from the UI down to the exclusion constraint. Backend compiles and the frontend builds clean, but neither has been run against a real database yet — no Docker on the dev machine (blocks Testcontainers) and no Neon project connected yet. See "Next Steps" in the design doc for the build order from here.

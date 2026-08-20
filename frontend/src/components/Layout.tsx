@@ -1,0 +1,55 @@
+import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+const navStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '12px 16px',
+  borderBottom: '1px solid var(--color-border-light)',
+}
+
+const navLinksStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 16,
+  alignItems: 'center',
+}
+
+export default function Layout() {
+  const { isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
+
+  return (
+    <div>
+      <nav style={navStyle} aria-label="Primary">
+        <Link to="/" style={{ fontWeight: 'bold', fontSize: 18, textDecoration: 'none', color: 'var(--color-text)' }}>
+          JDWNRH Scheduler
+        </Link>
+        <div style={navLinksStyle}>
+          {isAuthenticated ? (
+            <>
+              <Link to="/book">Book Appointment</Link>
+              <Link to="/">My Appointments</Link>
+              <button className="secondary" onClick={handleLogout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">Log in</Link>
+              <Link to="/register">Register</Link>
+            </>
+          )}
+        </div>
+      </nav>
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  )
+}

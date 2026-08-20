@@ -1,0 +1,122 @@
+/* Calm, high-contrast, uncluttered — per the office-hours wireframe brief
+   and the design review's accessibility/tone decisions. Not a final visual
+   design (that's /design-consultation's job once there's a real UI to
+   design a system around) — this is structure and legibility, done properly. */
+
+:root {
+  color-scheme: light;
+  --color-text: #1a1a1a;
+  --color-text-muted: #555555; /* 7.4:1 on white — comfortably passes WCAG AA */
+  --color-border: #999999;
+  --color-border-light: #cccccc;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f5f5f5;
+  --color-accent: #1a1a1a;
+  --color-error: #b3261e;
+  --color-error-bg: #fdecea;
+  --color-success-bg: #eef7ee;
+  --focus-ring: 3px solid #1a56db;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+a {
+  color: #1a56db;
+}
+a:visited {
+  color: #5b3aa7;
+}
+
+button, input, select {
+  font: inherit;
+}
+
+button {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 2px solid var(--color-accent);
+  background: var(--color-accent);
+  color: white;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.secondary {
+  background: white;
+  color: var(--color-accent);
+}
+button.danger {
+  background: white;
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input, select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text);
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.error-banner {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.success-banner {
+  background: var(--color-success-bg);
+  border: 1px solid #2e7d32;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, #ececec 37%, var(--color-bg-subtle) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  height: 44px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
