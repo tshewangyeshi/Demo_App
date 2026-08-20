@@ -208,6 +208,13 @@ export interface DayVolume {
   count: number
 }
 
+export interface HeatmapCell {
+  doctorId: string
+  doctorName: string
+  day: string
+  count: number
+}
+
 export interface ReportSummary {
   from: string
   to: string
@@ -217,6 +224,7 @@ export interface ReportSummary {
   byStatus: Record<string, number>
   byDoctor: DoctorLoad[]
   byDay: DayVolume[]
+  heatmap: HeatmapCell[]
 }
 
 export const getReportSummary = (from: string, to: string) =>

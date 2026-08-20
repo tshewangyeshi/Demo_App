@@ -61,19 +61,29 @@ public class ReportingService {
                 .map(d -> new DayVolume(d.day(), d.count()))
                 .toList();
 
+        // E5 heatmap: booking LOAD by doctor-by-day, not true free-capacity availability
+        // (see ReportingRepository.countByDoctorAndDay) — reuses the same doctor-name join above.
+        List<HeatmapCell> heatmap = reportingRepository.countByDoctorAndDay(from, to).stream()
+                .map(c -> new HeatmapCell(c.doctorId(), doctorNames.getOrDefault(c.doctorId(), "Unknown"), c.day(), c.count()))
+                .toList();
+
         double cancellationRate = total == 0 ? 0.0 : (double) cancelled / total;
         double noShowRate = total == 0 ? 0.0 : (double) noShow / total;
 
-        return new ReportSummary(fromDate, toDate, total, cancellationRate, noShowRate, statusCounts, byDoctor, byDay);
+        return new ReportSummary(fromDate, toDate, total, cancellationRate, noShowRate, statusCounts, byDoctor, byDay, heatmap);
     }
 
     public record ReportSummary(LocalDate from, LocalDate to, long totalAppointments, double cancellationRate,
-                                 double noShowRate, Map<String, Long> byStatus, List<DoctorLoad> byDoctor, List<DayVolume> byDay) {
+                                 double noShowRate, Map<String, Long> byStatus, List<DoctorLoad> byDoctor,
+                                 List<DayVolume> byDay, List<HeatmapCell> heatmap) {
     }
 
     public record DoctorLoad(java.util.UUID doctorId, String doctorName, long count) {
     }
 
     public record DayVolume(LocalDate day, long count) {
+    }
+
+    public record HeatmapCell(java.util.UUID doctorId, String doctorName, LocalDate day, long count) {
     }
 }

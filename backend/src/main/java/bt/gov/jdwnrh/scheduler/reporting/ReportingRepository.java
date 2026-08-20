@@ -83,6 +83,28 @@ public class ReportingRepository {
                 .toList();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<DoctorDayCount> countByDoctorAndDay(Instant from, Instant to) {
+        // See docs/designs/jdwnrh-scheduler.md, "Scope Expansion" -> E5: the doctor/department
+        // heatmap is booking LOAD by doctor-by-day (this exact GROUP BY), not true free-capacity
+        // availability — a real availability figure would mean re-running slot generation against
+        // every doctor's schedule for the whole range, which isn't a GROUP BY aggregate at all.
+        var rows = (List<Tuple>) entityManager.createNativeQuery("""
+                SELECT doctor_id, (date_trunc('day', start_time AT TIME ZONE 'Asia/Thimphu'))::date AS day, COUNT(*) AS cnt
+                FROM appointment
+                WHERE start_time >= :from AND start_time < :to
+                GROUP BY doctor_id, day
+                ORDER BY day, doctor_id
+                """, Tuple.class)
+                .setParameter("from", from)
+                .setParameter("to", to)
+                .getResultList();
+
+        return rows.stream()
+                .map(row -> new DoctorDayCount((UUID) row.get("doctor_id"), toLocalDate(row.get("day")), ((Number) row.get("cnt")).longValue()))
+                .toList();
+    }
+
     // Modern pgjdbc + Hibernate maps a native `date` column straight to java.time.LocalDate,
     // not java.sql.Date — only found by actually running this query, not by reading the code.
     private static LocalDate toLocalDate(Object value) {
@@ -102,5 +124,8 @@ public class ReportingRepository {
     }
 
     public record DayCount(LocalDate day, long count) {
+    }
+
+    public record DoctorDayCount(UUID doctorId, LocalDate day, long count) {
     }
 }

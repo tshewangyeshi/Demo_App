@@ -35,8 +35,13 @@ export default function AdminReportingPage() {
   const maxDoctorCount = Math.max(1, ...(summary?.byDoctor.map((d) => d.count) ?? [1]))
   const maxDayCount = Math.max(1, ...(summary?.byDay.map((d) => d.count) ?? [1]))
 
+  const heatmapDays = [...new Set(summary?.heatmap.map((c) => c.day) ?? [])].sort()
+  const heatmapDoctors = [...new Map((summary?.heatmap ?? []).map((c) => [c.doctorId, c.doctorName])).entries()]
+  const heatmapLookup = new Map((summary?.heatmap ?? []).map((c) => [`${c.doctorId}|${c.day}`, c.count]))
+  const maxHeatmapCount = Math.max(1, ...(summary?.heatmap.map((c) => c.count) ?? [1]))
+
   return (
-    <div className="container" style={{ maxWidth: 960 }}>
+    <div className="container" style={{ maxWidth: 1100 }}>
       <h1>Admin — Reports</h1>
       {error && <div className="error-banner" role="alert">{error}</div>}
 
@@ -116,6 +121,56 @@ export default function AdminReportingPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </section>
+
+          <section style={{ marginTop: 32 }}>
+            <h2>Doctor / Day Load Heatmap</h2>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: -8 }}>
+              Booking load by doctor and day — darker means busier. Not a free-capacity view (that would need
+              re-running slot generation against every schedule); this is booked appointments only.
+            </p>
+            {heatmapDoctors.length === 0 || heatmapDays.length === 0 ? (
+              <p>No appointments in this range.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: 6, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--color-bg)' }}>Doctor</th>
+                      {heatmapDays.map((day) => (
+                        <th key={day} style={{ padding: 6, fontWeight: 'normal', whiteSpace: 'nowrap' }}>{day.slice(5)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {heatmapDoctors.map(([doctorId, doctorName]) => (
+                      <tr key={doctorId}>
+                        <td style={{ padding: 6, whiteSpace: 'nowrap', position: 'sticky', left: 0, background: 'var(--color-bg)' }}>{doctorName}</td>
+                        {heatmapDays.map((day) => {
+                          const count = heatmapLookup.get(`${doctorId}|${day}`) ?? 0
+                          const intensity = count / maxHeatmapCount
+                          return (
+                            <td
+                              key={day}
+                              title={`${doctorName} — ${day}: ${count}`}
+                              style={{
+                                padding: 6,
+                                textAlign: 'center',
+                                minWidth: 28,
+                                background: count === 0 ? 'transparent' : `rgba(26, 86, 219, ${0.15 + intensity * 0.75})`,
+                                color: intensity > 0.5 ? 'white' : 'var(--color-text)',
+                              }}
+                            >
+                              {count === 0 ? '' : count}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
         </>
