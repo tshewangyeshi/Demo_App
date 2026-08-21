@@ -35,8 +35,21 @@ public class AuthController {
     // account; per-email catches a distributed/rotating-IP attack aimed at
     // one specific target account. Either limit tripping rejects the attempt.
     private static final int LOGIN_MAX_ATTEMPTS_PER_IP = 20;
+    private static final Duration LOGIN_IP_WINDOW = Duration.ofMinutes(15);
+    // Per-email lockout is intentionally on a SHORTER window than the per-IP
+    // one: unlike the per-IP bucket, this one is keyed on something an
+    // unauthenticated caller fully controls and can target directly — anyone
+    // who knows/guesses a real email can trip it on purpose with zero
+    // credentials, locking that specific person out of login. 15 minutes was
+    // the original value; shortened to 3 so a malicious lockout self-heals
+    // fast instead of blocking a real patient/doctor for a quarter hour,
+    // while still meaningfully slowing a sustained distributed credential-
+    // stuffing run against one account (/review adversarial pass,
+    // 2026-08-21, Finding 3 — a deliberate product decision, not an
+    // oversight: dropping this bucket entirely would reopen the distributed-
+    // guessing gap it exists to close).
     private static final int LOGIN_MAX_ATTEMPTS_PER_EMAIL = 5;
-    private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
+    private static final Duration LOGIN_EMAIL_WINDOW = Duration.ofMinutes(3);
     private static final int REGISTER_MAX_ATTEMPTS_PER_IP = 10;
     private static final Duration REGISTER_WINDOW = Duration.ofMinutes(15);
 
@@ -89,8 +102,8 @@ public class AuthController {
     @PostMapping("/api/auth/login")
     public ResponseEntity<AccessTokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String emailKey = "login-email:" + request.email().toLowerCase(Locale.ROOT);
-        boolean ipOk = rateLimiter.tryAcquire("login-ip:" + httpRequest.getRemoteAddr(), LOGIN_MAX_ATTEMPTS_PER_IP, LOGIN_WINDOW);
-        boolean emailOk = rateLimiter.tryAcquire(emailKey, LOGIN_MAX_ATTEMPTS_PER_EMAIL, LOGIN_WINDOW);
+        boolean ipOk = rateLimiter.tryAcquire("login-ip:" + httpRequest.getRemoteAddr(), LOGIN_MAX_ATTEMPTS_PER_IP, LOGIN_IP_WINDOW);
+        boolean emailOk = rateLimiter.tryAcquire(emailKey, LOGIN_MAX_ATTEMPTS_PER_EMAIL, LOGIN_EMAIL_WINDOW);
         if (!ipOk || !emailOk) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
         }
