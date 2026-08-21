@@ -47,7 +47,9 @@ describe('DashboardPage handleCancel', () => {
 
   it('does cancel the appointment when the confirm dialog is accepted', async () => {
     vi.spyOn(appointmentsApi, 'listMyAppointments').mockResolvedValue([confirmedAppointment])
-    const cancelSpy = vi.spyOn(appointmentsApi, 'cancelAppointment').mockResolvedValue(undefined)
+    const cancelSpy = vi
+      .spyOn(appointmentsApi, 'cancelAppointment')
+      .mockResolvedValue({ ...confirmedAppointment, status: 'CANCELLED' })
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     const user = userEvent.setup()
