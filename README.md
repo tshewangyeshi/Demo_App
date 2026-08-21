@@ -72,6 +72,55 @@ cd backend
 ./mvnw compile   # or test, or spring-boot:run
 ```
 
+### Deploying the backend (Render)
+
+`backend/Dockerfile` builds a runnable image (multi-stage: `eclipse-temurin:21-jdk`
+to compile via the project's own `mvnw`, `eclipse-temurin:21-jre` to run the
+jar) and `render.yaml` at the repo root is a Render Blueprint that provisions
+a free Postgres instance and a Docker web service from it. Render can't fully
+automate this end-to-end because of the two-role setup (see "Database" above):
+its Blueprint spec has no way to create the second, non-owner `scheduler_app`
+role your Postgres connection needs for RLS to actually apply, so a few steps
+stay manual — mirroring exactly the "migrate once, then create+password the
+app role" dance the local setup above does with `psql`.
+
+1. **Push this repo to GitHub** (already done if you're reading this from a
+   clone) and sign in to [Render](https://render.com) — connect your GitHub
+   account and grant it access to this repo.
+2. **New → Blueprint**, pick this repo. Render reads `render.yaml` and creates
+   `jdwnrh-scheduler-db` (Postgres) and `jdwnrh-scheduler-backend` (the Docker
+   web service). `APP_JWT_SECRET` is auto-generated; `FLYWAY_DB_USERNAME`/
+   `FLYWAY_DB_PASSWORD` are auto-wired to the database's own owner role.
+3. **Once the database is live**, open its Info page for the host/port/database
+   name (or the full `psql` connection command Render shows you) and:
+   - Set `FLYWAY_DB_URL` on the backend service to
+     `jdbc:postgresql://<host>:<port>/<database>` (same host/port/db Render
+     shows you, just with the `jdbc:` prefix instead of embedded credentials —
+     the username/password are already wired as separate env vars).
+   - Connect via the connection string Render gives you (or its dashboard
+     Shell) and run, once:
+     ```bash
+     psql "<render external connection string>" -c \
+       "CREATE ROLE scheduler_app LOGIN PASSWORD '<pick a strong password>';"
+     ```
+   - Set `APP_DB_URL` to the same `jdbc:postgresql://<host>:<port>/<database>`
+     value as `FLYWAY_DB_URL`, and `APP_DB_PASSWORD` to the password you just
+     picked (`APP_DB_USERNAME` already defaults to `scheduler_app`).
+   - Set `APP_CORS_ALLOWED_ORIGIN` to your deployed Vercel frontend's exact
+     origin (e.g. `https://your-app.vercel.app` — no trailing slash).
+4. **Deploy.** First boot runs all Flyway migrations (including creating
+   `scheduler_app`, which Flyway's `CREATE ROLE IF NOT EXISTS` will skip since
+   you already created it with the real password in step 3 — same reasoning
+   as local setup's `V1` comment).
+5. Once it's live, provision your own real account the same way local setup's
+   README section for that already describes (an `INSERT INTO app_user`, or
+   `/api/auth/register` + a manual role upgrade) — the local dev `SUPER_ADMIN`
+   row created earlier this session only exists in your local Postgres, not here.
+
+Render's free web service plan spins down on idle (cold starts on the first
+request after a while) — fine for a portfolio project, worth knowing if a
+request seems to hang for ~30s the first time.
+
 ## Frontend
 
 React + Vite + TypeScript SPA, calling the backend REST API directly.

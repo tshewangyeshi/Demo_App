@@ -1,0 +1,49 @@
+databases:
+  - name: jdwnrh-scheduler-db
+    plan: free
+    postgresMajorVersion: 18
+
+services:
+  - type: web
+    name: jdwnrh-scheduler-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      # Render's managed Postgres gives you ONE role (the database's own
+      # owner). This app deliberately needs TWO — Flyway migrates as the
+      # owner, the app connects at runtime as a separate non-owner role
+      # (scheduler_app) so Postgres Row-Level Security actually applies
+      # (table owners bypass RLS unconditionally — see
+      # docs/designs/jdwnrh-scheduler.md, "RLS only binds if the app
+      # connects as a non-owner role"). Render's Blueprint spec can't
+      # create that second role for you, so these are `sync: false` —
+      # fill them in via the dashboard after the database exists, same
+      # one-time "migrate once, then create+password the app role"
+      # sequence the README documents for local setup. See the README's
+      # "Deploying the backend (Render)" section for the exact steps.
+      #
+      # FLYWAY_DB_URL is sync:false, not fromDatabase — Render's
+      # `connectionString` property is a bare `postgres://user:pass@host/db`
+      # URI, not the `jdbc:postgresql://host:port/db` form Spring's
+      # datasource.url needs (credentials are separate properties here,
+      # not embedded in the URL). Build it from the DB's Info page.
+      - key: FLYWAY_DB_URL
+        sync: false
+      - key: FLYWAY_DB_USERNAME
+        fromDatabase:
+          name: jdwnrh-scheduler-db
+          property: user
+      - key: FLYWAY_DB_PASSWORD
+        fromDatabase:
+          name: jdwnrh-scheduler-db
+          property: password
+      - key: APP_DB_URL
+        sync: false
+      - key: APP_DB_PASSWORD
+        sync: false
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: APP_CORS_ALLOWED_ORIGIN
+        sync: false
