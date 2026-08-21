@@ -23,3 +23,16 @@ Always read DESIGN.md before making any visual or UI decisions.
 All font choices, colors, spacing, and aesthetic direction are defined there.
 Do not deviate without explicit user approval.
 In QA mode, flag any code that doesn't match DESIGN.md.
+
+## Testing
+Backend (Java 21/Spring Boot, Maven): `cd backend && ./mvnw test` — requires
+`JAVA_HOME` pointed at a JDK 21+ install (see README's "One-time local setup").
+Frontend (React/TypeScript, Vite): `cd frontend && npm test` (Vitest + React
+Testing Library). See TESTING.md for conventions and layers.
+
+- 100% test coverage is the goal — tests make vibe coding safe.
+- When writing new functions, write a corresponding test.
+- When fixing a bug, write a regression test.
+- When adding error handling, write a test that triggers the error.
+- When adding a conditional (if/else, switch), write tests for both paths.
+- Never commit code that makes existing tests fail.
