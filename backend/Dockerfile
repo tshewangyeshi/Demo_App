@@ -5,12 +5,16 @@ FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # Copy the wrapper and pom first so dependency resolution is cached
-# separately from source changes (mvnw itself needs no chmod — it's
-# already executable in the image's filesystem regardless of what git
-# recorded, since this runs as a fresh COPY, not a checkout).
+# separately from source changes. mvnw is committed to git as mode 644
+# (non-executable — a Windows-checkout artifact, same issue fixed for
+# GitHub Actions in .github/workflows/test.yml's backend job): COPY
+# preserves that mode into the image layer, so ./mvnw fails with
+# "Permission denied" (exit 126) without an explicit chmod first —
+# found the hard way via a failed Render build.
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
+RUN chmod +x mvnw
 RUN ./mvnw -q -B dependency:go-offline
 
 COPY src src

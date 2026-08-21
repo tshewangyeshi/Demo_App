@@ -1,7 +1,7 @@
 databases:
   - name: jdwnrh-scheduler-db
     plan: free
-    postgresMajorVersion: 18
+    postgresMajorVersion: "18"
 
 services:
   - type: web
