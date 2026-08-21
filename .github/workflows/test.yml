@@ -19,3 +19,52 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm test
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: scheduler
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Pre-create scheduler_app with a known password so V1's `CREATE ROLE
+      # IF NOT EXISTS` skips it and keeps this password (see V1's own
+      # comment: it deliberately does NOT set a real password itself — the
+      # same "migrate once, then ALTER ROLE" dance README's local setup
+      # documents, just done as a CI step instead of by hand).
+      FLYWAY_DB_URL: jdbc:postgresql://localhost:5432/scheduler
+      FLYWAY_DB_USERNAME: postgres
+      FLYWAY_DB_PASSWORD: postgres
+      APP_DB_URL: jdbc:postgresql://localhost:5432/scheduler
+      APP_DB_PASSWORD: ci-scheduler-app-password
+      # Not a real secret — this build never talks to anything but the
+      # ephemeral CI Postgres service, and the container is destroyed after
+      # the job. Matches the pattern in AuthControllerTest/SchedulerApplicationTests.
+      APP_JWT_SECRET: ci-only-jwt-secret-never-used-outside-github-actions-0123456789
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Pre-create scheduler_app role
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE ROLE scheduler_app LOGIN PASSWORD '$APP_DB_PASSWORD';"
+      - name: Make mvnw executable
+        # mvnw is committed with mode 644 (a Windows-checkout artifact — git
+        # on this project's dev machine doesn't track the executable bit
+        # reliably), so it needs +x explicitly on the Linux runner.
+        run: chmod +x mvnw
+      - run: ./mvnw test

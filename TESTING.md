@@ -49,5 +49,6 @@ npm test
 - When adding a conditional (if/else, switch), test both paths.
 - Never commit code that makes existing tests fail.
 
-CI: `.github/workflows/test.yml` runs `npm test` on every push/PR (frontend only —
-the backend suite needs a live Postgres instance, not yet wired into CI).
+CI: `.github/workflows/test.yml` runs `npm test` (frontend) and `./mvnw test`
+(backend, against a real `postgres:18` service container — see the `backend`
+job) on every push/PR.
