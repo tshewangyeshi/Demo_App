@@ -42,11 +42,14 @@ server:
 
 app:
   jwt:
-    # HMAC-SHA signing key for access tokens — MUST be overridden via
-    # APP_JWT_SECRET in every real environment. The default below is only
-    # for local dev against a throwaway database and is deliberately obvious
-    # so it's never mistaken for a real secret.
-    secret: ${APP_JWT_SECRET:dev-only-secret-change-me-before-any-real-deploy-0123456789}
+    # HMAC-SHA signing key for access tokens. No default on purpose (see
+    # /cso security audit, 2026-08-21, Finding 1): a hardcoded fallback here
+    # would mean any deployment that forgot to set this env var would sign
+    # tokens with a key visible to anyone who's read this file, letting an
+    # attacker forge a token for any user/role. Failing to start with no
+    # value set is the correct behavior in every environment, local dev
+    # included — see run-local.sh.
+    secret: ${APP_JWT_SECRET}
   cors:
     # The SPA's origin — frontend and backend are deliberately on different
     # domains (Vercel + Railway/Render). Must be an exact origin, never "*",

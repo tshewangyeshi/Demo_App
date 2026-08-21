@@ -39,6 +39,7 @@ Against Neon (or any real deployment), both must point at the **direct** connect
    export FLYWAY_DB_PASSWORD="<your postgres superuser password>"
    export APP_DB_URL="jdbc:postgresql://127.0.0.1:5432/scheduler"
    export APP_DB_PASSWORD="<pick a strong password for scheduler_app>"
+   export APP_JWT_SECRET="<generate with: openssl rand -base64 48>"
    cd backend
    ./mvnw spring-boot:run
    ```
@@ -49,7 +50,7 @@ Against Neon (or any real deployment), both must point at the **direct** connect
    ```
 4. **Start the app again** with the same env vars — it should boot cleanly and serve on `:8080`.
 
-Keep `FLYWAY_DB_PASSWORD`/`APP_DB_PASSWORD` as env vars in your shell (or a local, gitignored script) — never commit them. `APP_DB_USERNAME` defaults to `scheduler_app`, no need to set it.
+Keep `FLYWAY_DB_PASSWORD`/`APP_DB_PASSWORD`/`APP_JWT_SECRET` as env vars in your shell (or a local, gitignored script) — never commit them. `APP_DB_USERNAME` defaults to `scheduler_app`, no need to set it. `APP_JWT_SECRET` has **no default** — the app refuses to start without it, deliberately: a hardcoded fallback here would mean any deployment that forgot to set it signs tokens with a key visible to anyone reading the source, letting an attacker forge a token for any user/role (found by `/cso`, 2026-08-21).
 
 #### Against Neon / a real deployment
 
@@ -60,6 +61,7 @@ export FLYWAY_DB_USERNAME="<neon-owner-role>"
 export FLYWAY_DB_PASSWORD="<neon-owner-password>"
 export APP_DB_URL="jdbc:postgresql://<neon-direct-host>/scheduler"
 export APP_DB_PASSWORD="<a-new-strong-password-for-scheduler_app>"
+export APP_JWT_SECRET="<a-new-strong-secret-distinct-from-your-local-one>"
 ```
 If your Neon connection role lacks `CREATEROLE`, `V1`'s `CREATE ROLE` step will fail — run that one block manually via the Neon SQL console as the project owner, then let Flyway continue with V2 onward. Same "set the real password after V1 runs" step applies.
 

@@ -19,7 +19,10 @@ $env:FLYWAY_DB_PASSWORD = "<your postgres superuser password>"
 $env:APP_DB_URL = "jdbc:postgresql://127.0.0.1:5432/scheduler"
 $env:APP_DB_PASSWORD = "<pick a strong password for scheduler_app>"
 
-Write-Host "Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*)."
+# Required, no default — generate one with: openssl rand -base64 48
+$env:APP_JWT_SECRET = "<generate with: openssl rand -base64 48>"
+
+Write-Host "Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*, APP_JWT_SECRET)."
 
 if ($Run) {
     & .\mvnw.cmd spring-boot:run

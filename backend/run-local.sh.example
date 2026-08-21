@@ -16,7 +16,10 @@ export FLYWAY_DB_PASSWORD="<your postgres superuser password>"
 export APP_DB_URL="jdbc:postgresql://127.0.0.1:5432/scheduler"
 export APP_DB_PASSWORD="<pick a strong password for scheduler_app>"
 
-echo "Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*)."
+# Required, no default — generate one with: openssl rand -base64 48
+export APP_JWT_SECRET="<generate with: openssl rand -base64 48>"
+
+echo "Local dev env vars set (JAVA_HOME, FLYWAY_DB_*, APP_DB_*, APP_JWT_SECRET)."
 
 if [ "$1" = "--run" ]; then
     cd "$(dirname "$0")"
