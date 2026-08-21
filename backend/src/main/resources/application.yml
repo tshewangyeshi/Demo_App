@@ -39,6 +39,19 @@ spring:
 
 server:
   port: ${PORT:8080}
+  error:
+    # /error is permitAll (see SecurityConfig — needed so the security
+    # filter chain's re-run on sendError's internal forward doesn't turn a
+    # routine 400 into a bare 403; see /review, 2026-08-21). That makes it
+    # reachable, unauthenticated, on every request path. Spring Boot's
+    # defaults (NEVER) already keep message/stacktrace/exception out of the
+    # response, but pinning it explicitly means a future dependency bump or
+    # stray property change can't silently start leaking exception details
+    # to an anonymous caller (/review adversarial pass, 2026-08-21, Finding 4).
+    include-message: never
+    include-stacktrace: never
+    include-exception: false
+    include-binding-errors: never
   # Resolve the real client IP from X-Forwarded-For/Forwarded once deployed
   # behind Railway/Render's edge proxy (see /review adversarial pass,
   # 2026-08-21, Finding 1): without this, request.getRemoteAddr() — what
