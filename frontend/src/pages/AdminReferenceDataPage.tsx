@@ -66,6 +66,7 @@ export default function AdminReferenceDataPage() {
   }
 
   async function handleDeleteDepartment(id: string) {
+    if (!window.confirm('Delete this department? This cannot be undone.')) return
     setError(null)
     try {
       await deleteDepartment(id)
@@ -88,6 +89,7 @@ export default function AdminReferenceDataPage() {
   }
 
   async function handleDeleteSpecialty(id: string) {
+    if (!window.confirm('Delete this specialty? This cannot be undone.')) return
     setError(null)
     try {
       await deleteSpecialty(id)
@@ -109,6 +111,7 @@ export default function AdminReferenceDataPage() {
   }
 
   async function handleDeleteAppointmentType(id: string) {
+    if (!window.confirm('Delete this appointment type? This cannot be undone.')) return
     setError(null)
     try {
       await deleteAppointmentType(id)
@@ -130,6 +133,7 @@ export default function AdminReferenceDataPage() {
   }
 
   async function handleDeleteHoliday(id: string) {
+    if (!window.confirm('Delete this holiday? This cannot be undone.')) return
     setError(null)
     try {
       await deleteHoliday(id)

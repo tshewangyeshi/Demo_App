@@ -39,6 +39,9 @@ export default function DashboardPage() {
   }, [])
 
   async function handleCancel(id: string) {
+    if (!window.confirm('Cancel this appointment? This cannot be undone.')) {
+      return
+    }
     setCancellingId(id)
     setError(null)
     try {

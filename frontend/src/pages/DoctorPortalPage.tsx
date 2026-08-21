@@ -71,6 +71,7 @@ export default function DoctorPortalPage() {
   }
 
   async function handleRemoveException(id: string) {
+    if (!window.confirm('Remove this leave entry? This cannot be undone.')) return
     setError(null)
     try {
       await removeMyException(id)

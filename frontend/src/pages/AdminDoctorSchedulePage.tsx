@@ -53,6 +53,7 @@ export default function AdminDoctorSchedulePage() {
 
   async function handleRemoveBlock(scheduleId: string) {
     if (!doctorId) return
+    if (!window.confirm('Remove this schedule block? This cannot be undone.')) return
     setError(null)
     try {
       await removeDoctorScheduleBlock(doctorId, scheduleId)
@@ -75,6 +76,7 @@ export default function AdminDoctorSchedulePage() {
 
   async function handleRemoveException(exceptionId: string) {
     if (!doctorId) return
+    if (!window.confirm('Remove this leave entry? This cannot be undone.')) return
     setError(null)
     try {
       await removeDoctorException(doctorId, exceptionId)

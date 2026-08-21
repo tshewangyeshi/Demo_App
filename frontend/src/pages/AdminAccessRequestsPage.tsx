@@ -44,7 +44,11 @@ export default function AdminAccessRequestsPage() {
   }
 
   async function handleReject(id: string) {
-    const reason = window.prompt('Reason for declining (optional):') ?? undefined
+    const reasonInput = window.prompt('Reason for declining (optional):')
+    if (reasonInput === null) {
+      return // user clicked Cancel on the prompt — abort, don't reject with no reason
+    }
+    const reason = reasonInput || undefined
     setActingOn(id)
     setError(null)
     try {
