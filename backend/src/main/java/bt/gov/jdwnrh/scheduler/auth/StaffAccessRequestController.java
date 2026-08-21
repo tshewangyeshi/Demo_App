@@ -1,9 +1,11 @@
 package bt.gov.jdwnrh.scheduler.auth;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import bt.gov.jdwnrh.scheduler.config.InMemoryRateLimiter;
 import bt.gov.jdwnrh.scheduler.iam.Role;
 import bt.gov.jdwnrh.scheduler.iam.StaffAccessRequest;
 import bt.gov.jdwnrh.scheduler.iam.StaffAccessRequestRepository;
@@ -35,21 +38,35 @@ public class StaffAccessRequestController {
 
     private static final Set<Role> REQUESTABLE_ROLES = Set.of(Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST);
 
+    // Same abuse profile as AuthController.register() — public, unauthenticated,
+    // email+password — and this codebase's own /review caught that this endpoint
+    // was missed when rate limiting was first added there. Per-IP only (no
+    // per-email key): unlike login, there's no "target account" to protect here,
+    // and an email-keyed bucket on unauthenticated attacker-controlled input is
+    // exactly the unbounded-growth risk InMemoryRateLimiter now guards against.
+    private static final int SUBMIT_MAX_ATTEMPTS_PER_IP = 10;
+    private static final Duration SUBMIT_WINDOW = Duration.ofMinutes(15);
+
     private final StaffAccessRequestRepository repository;
     private final AuthLookupRepository authLookupRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InMemoryRateLimiter rateLimiter;
     private final Clock clock;
 
     public StaffAccessRequestController(StaffAccessRequestRepository repository, AuthLookupRepository authLookupRepository,
-                                         PasswordEncoder passwordEncoder, Clock clock) {
+                                         PasswordEncoder passwordEncoder, InMemoryRateLimiter rateLimiter, Clock clock) {
         this.repository = repository;
         this.authLookupRepository = authLookupRepository;
         this.passwordEncoder = passwordEncoder;
+        this.rateLimiter = rateLimiter;
         this.clock = clock;
     }
 
     @PostMapping("/api/auth/staff-access-requests")
-    public ResponseEntity<SubmitResponse> submit(@Valid @RequestBody SubmitRequest request) {
+    public ResponseEntity<SubmitResponse> submit(@Valid @RequestBody SubmitRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryAcquire("staff-request-ip:" + httpRequest.getRemoteAddr(), SUBMIT_MAX_ATTEMPTS_PER_IP, SUBMIT_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
         if (!REQUESTABLE_ROLES.contains(request.requestedRole())) {
             return ResponseEntity.badRequest().build();
         }
