@@ -63,6 +63,15 @@ public class SecurityConfig {
                 .cors(cors -> {}) // picks up the corsConfigurationSource bean above
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Spring Boot's default error handling calls response.sendError(), which
+                        // triggers a server-side FORWARD to /error (BasicErrorController) — a
+                        // SEPARATE dispatch that re-runs this same filter chain. Without this
+                        // permitAll, an unauthenticated caller hitting a validation error (or any
+                        // uncaught exception) on a permitAll endpoint never sees the real error:
+                        // /error falls through to .anyRequest().authenticated() below, which denies
+                        // it, replacing the real 400/500 with a bare empty 403. This is the root
+                        // cause of the "mystery bare 403" pattern noted repeatedly in README.
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/me").authenticated() // carve-out: matched before the broader permitAll below
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/departments/**", "/api/doctors/**", "/api/availability/**").permitAll()
