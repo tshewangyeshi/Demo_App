@@ -82,5 +82,11 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     return undefined as T
   }
 
-  return (await response.json()) as T
+  // Defense-in-depth: a 200 with an empty body (an easy backend slip — see
+  // AuthController.logout() / AdminAccessRequestController.approve/reject,
+  // which all made this mistake) would otherwise make response.json() throw
+  // a SyntaxError that's easy to leave uncaught, silently aborting whatever
+  // async chain called this — no console error, no visible failure at all.
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }

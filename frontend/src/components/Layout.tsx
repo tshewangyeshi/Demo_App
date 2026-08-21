@@ -8,7 +8,7 @@ export default function Layout() {
 
   async function handleLogout() {
     await logout()
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   return (

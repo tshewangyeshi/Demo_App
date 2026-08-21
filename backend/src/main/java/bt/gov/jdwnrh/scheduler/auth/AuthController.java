@@ -112,7 +112,11 @@ public class AuthController {
         }
         ResponseCookie cleared = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
                 .httpOnly(true).secure(true).sameSite("None").path("/api/auth").maxAge(0).build();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cleared.toString()).build();
+        // 204, not 200: an empty-body 200 makes the frontend's apiFetch (which only
+        // skips response.json() for exactly 204) throw a SyntaxError parsing the
+        // empty body — silently aborting the whole post-logout client state update
+        // (nav stays stale, navigate() never runs) with no visible console error.
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).header(HttpHeaders.SET_COOKIE, cleared.toString()).build();
     }
 
     private ResponseEntity<AccessTokenResponse> issueTokens(UUID userId, Role role, UUID departmentId) {

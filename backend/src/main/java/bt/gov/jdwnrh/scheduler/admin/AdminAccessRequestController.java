@@ -52,14 +52,16 @@ public class AdminAccessRequestController {
     public ResponseEntity<Void> approve(@PathVariable UUID id) {
         RlsContext caller = adminScope.require();
         service.approve(caller, id);
-        return ResponseEntity.ok().build();
+        // 204, not 200: see AuthController.logout() for why an empty-body 200
+        // silently breaks the frontend's apiFetch<void> callers.
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/reject")
     public ResponseEntity<Void> reject(@PathVariable UUID id, @Valid @RequestBody RejectRequest request) {
         RlsContext caller = adminScope.require();
         service.reject(caller, id, request.reason());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(AccessRequestAlreadyReviewedException.class)
