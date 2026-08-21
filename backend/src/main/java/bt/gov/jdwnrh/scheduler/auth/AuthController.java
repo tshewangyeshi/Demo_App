@@ -2,8 +2,10 @@ package bt.gov.jdwnrh.scheduler.auth;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpHeaders;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import bt.gov.jdwnrh.scheduler.config.InMemoryRateLimiter;
 import bt.gov.jdwnrh.scheduler.iam.AppUser;
 import bt.gov.jdwnrh.scheduler.iam.AppUserRepository;
 import bt.gov.jdwnrh.scheduler.iam.Role;
@@ -25,28 +28,47 @@ public class AuthController {
 
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
+    // Same pattern as PublicLookupController's rate limiter, but on the
+    // higher-value credential endpoint it was never applied to (see /cso
+    // security audit, 2026-08-21, Finding 2). Two keys, not one: per-IP
+    // catches a single attacker grinding through a wordlist against one
+    // account; per-email catches a distributed/rotating-IP attack aimed at
+    // one specific target account. Either limit tripping rejects the attempt.
+    private static final int LOGIN_MAX_ATTEMPTS_PER_IP = 20;
+    private static final int LOGIN_MAX_ATTEMPTS_PER_EMAIL = 5;
+    private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
+    private static final int REGISTER_MAX_ATTEMPTS_PER_IP = 10;
+    private static final Duration REGISTER_WINDOW = Duration.ofMinutes(15);
+
     private final AppUserRepository appUserRepository;
     private final AuthLookupRepository authLookupRepository;
     private final CurrentRoleLookup currentRoleLookup;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final InMemoryRateLimiter rateLimiter;
     private final Clock clock;
 
     public AuthController(AppUserRepository appUserRepository, AuthLookupRepository authLookupRepository,
                            CurrentRoleLookup currentRoleLookup, PasswordEncoder passwordEncoder,
-                           JwtService jwtService, RefreshTokenService refreshTokenService, Clock clock) {
+                           JwtService jwtService, RefreshTokenService refreshTokenService,
+                           InMemoryRateLimiter rateLimiter, Clock clock) {
         this.appUserRepository = appUserRepository;
         this.authLookupRepository = authLookupRepository;
         this.currentRoleLookup = currentRoleLookup;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.rateLimiter = rateLimiter;
         this.clock = clock;
     }
 
     @PostMapping("/api/auth/register")
-    public ResponseEntity<AccessTokenResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<AccessTokenResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryAcquire("register-ip:" + httpRequest.getRemoteAddr(), REGISTER_MAX_ATTEMPTS_PER_IP, REGISTER_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
+
         if (authLookupRepository.findByEmail(request.email()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
@@ -65,7 +87,14 @@ public class AuthController {
     }
 
     @PostMapping("/api/auth/login")
-    public ResponseEntity<AccessTokenResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AccessTokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String emailKey = "login-email:" + request.email().toLowerCase(Locale.ROOT);
+        boolean ipOk = rateLimiter.tryAcquire("login-ip:" + httpRequest.getRemoteAddr(), LOGIN_MAX_ATTEMPTS_PER_IP, LOGIN_WINDOW);
+        boolean emailOk = rateLimiter.tryAcquire(emailKey, LOGIN_MAX_ATTEMPTS_PER_EMAIL, LOGIN_WINDOW);
+        if (!ipOk || !emailOk) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
+
         var credentials = authLookupRepository.findByEmail(request.email()).orElse(null);
 
         if (credentials == null || !passwordEncoder.matches(request.password(), credentials.passwordHash())) {
