@@ -1,5 +1,14 @@
 import { getAccessToken, setAccessToken } from './tokenStore'
 
+// Empty in local dev — Vite's server.proxy (vite.config.ts) forwards
+// relative /api/* calls to the backend, same-origin, no CORS involved.
+// In production the frontend (Vercel) and backend (Render) are genuinely
+// different origins — VITE_API_BASE_URL points requests at the real
+// deployed backend. Vite inlines this at BUILD time (VITE_-prefixed env
+// vars only), so setting it on Vercel requires a rebuild to take effect,
+// not just a redeploy of the same build output.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -23,7 +32,7 @@ let refreshInFlight: Promise<boolean> | null = null
 async function refreshAccessToken(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
-      const response = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
       if (!response.ok) {
         setAccessToken(null)
         return false
@@ -54,7 +63,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   const { body, skipAuthRetry, headers, ...rest } = options
 
   const doFetch = () =>
-    fetch(path, {
+    fetch(`${API_BASE_URL}${path}`, {
       ...rest,
       credentials: 'include',
       headers: {
