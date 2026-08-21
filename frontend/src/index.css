@@ -32,7 +32,7 @@
   --color-info: #0B4F6C;
   --color-info-bg: #E4EDF1;
 
-  --focus-ring: 3px solid #1a56db;
+  --focus-ring: 3px solid var(--color-primary);
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -107,7 +107,7 @@ a {
   color: var(--color-primary);
 }
 a:visited {
-  color: #5b3aa7;
+  color: var(--color-primary-dark);
 }
 
 button, input, select {
@@ -120,9 +120,9 @@ button {
   min-height: 44px;
   padding: 0 20px;
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-accent-dark);
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  border: 1.5px solid var(--color-primary-dark);
+  background: var(--color-primary);
+  color: white;
   cursor: pointer;
 }
 button:disabled {
@@ -133,6 +133,16 @@ button.secondary {
   background: var(--color-bg);
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+/* The one true call-to-action per screen — see DESIGN.md: the saffron
+   accent is reserved for a single primary CTA, never the default button
+   look (see /review, 2026-08-21 — the old default WAS the accent, so
+   every plain button rendered gold at once wherever more than one
+   appeared on a screen). Opt in explicitly per screen. */
+button.primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent-dark);
 }
 button.danger {
   background: var(--color-bg);

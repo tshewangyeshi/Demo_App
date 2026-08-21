@@ -101,9 +101,13 @@ function PatientRegisterForm({ onBack }: { onBack: () => void }) {
       const me = await register(email, password, firstName, lastName)
       navigate(homePathForRole(me.role))
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 409
-        ? 'An account with this email already exists. Try logging in instead.'
-        : 'Something went wrong creating your account. Please try again.')
+      if (err instanceof ApiError && err.status === 409) {
+        setError('An account with this email already exists. Try logging in instead.')
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError('Too many attempts. Please wait a few minutes and try again.')
+      } else {
+        setError('Something went wrong creating your account. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -135,7 +139,7 @@ function PatientRegisterForm({ onBack }: { onBack: () => void }) {
           <input id="password" type="password" required minLength={8} autoComplete="new-password" value={password}
                  onChange={(e) => setPassword(e.target.value)} style={{ width: '100%' }} />
         </div>
-        <button type="submit" disabled={submitting}>{submitting ? 'Creating account…' : 'Register'}</button>
+        <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Creating account…' : 'Register'}</button>
       </form>
     </>
   )
@@ -178,9 +182,13 @@ function StaffAccessRequestForm({ role, onBack }: { role: Exclude<SignupRole, 'P
       })
       setSubmitted(true)
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 409
-        ? 'An account with this email already exists. Try logging in instead.'
-        : 'Something went wrong submitting your request. Please try again.')
+      if (err instanceof ApiError && err.status === 409) {
+        setError('An account with this email already exists. Try logging in instead.')
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError('Too many attempts. Please wait a few minutes and try again.')
+      } else {
+        setError('Something went wrong submitting your request. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -247,7 +255,7 @@ function StaffAccessRequestForm({ role, onBack }: { role: Exclude<SignupRole, 'P
             <textarea id="req-bio" value={bio} onChange={(e) => setBio(e.target.value)} style={{ width: '100%', minHeight: 80 }} />
           </div>
         )}
-        <button type="submit" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit request'}</button>
+        <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit request'}</button>
       </form>
     </>
   )

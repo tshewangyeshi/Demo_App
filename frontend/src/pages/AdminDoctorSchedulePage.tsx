@@ -161,7 +161,7 @@ function AddScheduleBlockForm({ onSubmit }: { onSubmit: (dayOfWeek: string, star
         <label htmlFor="block-end">End</label>
         <input id="block-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
       </div>
-      <button type="submit">Add</button>
+      <button type="submit" className="primary">Add</button>
     </form>
   )
 }
@@ -194,7 +194,7 @@ function AddExceptionForm({ onSubmit }: { onSubmit: (start: string, end: string,
         <label htmlFor="ex-reason">Reason</label>
         <input id="ex-reason" required value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Training" />
       </div>
-      <button type="submit">Add</button>
+      <button type="submit" className="primary">Add</button>
     </form>
   )
 }

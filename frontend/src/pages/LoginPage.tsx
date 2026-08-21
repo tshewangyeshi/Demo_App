@@ -20,10 +20,14 @@ export default function LoginPage() {
       const me = await login(email, password)
       navigate(homePathForRole(me.role))
     } catch (err) {
-      // Never a raw 401 — a clear, actionable message (see design doc, Interaction States).
-      setError(err instanceof ApiError && err.status === 401
-        ? 'Incorrect email or password. Please try again.'
-        : 'Something went wrong logging in. Please try again.')
+      // Never a raw 401/429 — a clear, actionable message (see design doc, Interaction States).
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Incorrect email or password. Please try again.')
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError('Too many attempts. Please wait a few minutes and try again.')
+      } else {
+        setError('Something went wrong logging in. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -44,7 +48,7 @@ export default function LoginPage() {
           <input id="password" type="password" required autoComplete="current-password" value={password}
                  onChange={(e) => setPassword(e.target.value)} style={{ width: '100%' }} />
         </div>
-        <button type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'}</button>
+        <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'}</button>
       </form>
       <p>Don't have an account? <Link to="/register">Register</Link></p>
     </div>

@@ -198,7 +198,7 @@ function AddExceptionForm({ onAdded, onError }: { onAdded: () => void; onError: 
         <label htmlFor="ex-reason">Reason</label>
         <input id="ex-reason" required value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. On leave" />
       </div>
-      <button type="submit" disabled={submitting}>{submitting ? 'Adding…' : 'Add'}</button>
+      <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Adding…' : 'Add'}</button>
     </form>
   )
 }

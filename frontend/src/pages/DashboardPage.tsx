@@ -81,7 +81,7 @@ export default function DashboardPage() {
       {appointments !== null && appointments.length === 0 && (
         <div style={{ border: '1px solid var(--color-border-light)', padding: 24, textAlign: 'center' }}>
           <p>No upcoming appointments.</p>
-          <Link to="/book"><button>Book Appointment</button></Link>
+          <Link to="/book"><button className="primary">Book Appointment</button></Link>
         </div>
       )}
 

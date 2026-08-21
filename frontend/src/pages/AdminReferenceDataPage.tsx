@@ -253,7 +253,7 @@ function InlineCreateForm({ label, onSubmit }: { label: string; onSubmit: (name:
       style={{ display: 'flex', gap: 8, marginTop: 8 }}
     >
       <input aria-label={label} placeholder={label} value={name} onChange={(e) => setName(e.target.value)} />
-      <button type="submit">Add</button>
+      <button type="submit" className="primary">Add</button>
     </form>
   )
 }
@@ -284,7 +284,7 @@ function AppointmentTypeForm({ onSubmit }: { onSubmit: (name: string, durationMi
         <label htmlFor="apt-type-buffer">Buffer (min)</label>
         <input id="apt-type-buffer" type="number" min={0} value={buffer} onChange={(e) => setBuffer(Number(e.target.value))} />
       </div>
-      <button type="submit">Add</button>
+      <button type="submit" className="primary">Add</button>
     </form>
   )
 }
@@ -318,7 +318,7 @@ function HolidayForm({ onSubmit, allowHospitalWide }: { onSubmit: (date: string,
           Hospital-wide
         </label>
       )}
-      <button type="submit">Add</button>
+      <button type="submit" className="primary">Add</button>
     </form>
   )
 }

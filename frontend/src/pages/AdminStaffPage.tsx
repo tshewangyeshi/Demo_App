@@ -189,7 +189,7 @@ function CreateStaffForm({
           <textarea id="staff-bio" value={bio} onChange={(e) => setBio(e.target.value)} style={{ width: '100%', minHeight: 80 }} />
         </div>
       )}
-      <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create account'}</button>
+      <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Creating…' : 'Create account'}</button>
     </form>
   )
 }

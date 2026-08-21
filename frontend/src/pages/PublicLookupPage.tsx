@@ -56,7 +56,7 @@ export default function PublicLookupPage() {
           <input id="lookup-lastname" required value={lastName}
                  onChange={(e) => setLastName(e.target.value)} style={{ width: '100%' }} />
         </div>
-        <button type="submit" disabled={submitting}>{submitting ? 'Looking up…' : 'Find appointment'}</button>
+        <button type="submit" className="primary" disabled={submitting}>{submitting ? 'Looking up…' : 'Find appointment'}</button>
       </form>
 
       {result && (

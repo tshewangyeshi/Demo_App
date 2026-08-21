@@ -213,7 +213,7 @@ export default function BookingPage() {
 
       {selectedSlot && (
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={handleConfirm} disabled={booking}>
+          <button className="primary" onClick={handleConfirm} disabled={booking}>
             {booking ? 'Booking…' : `Book ${formatTime(selectedSlot.start)}`}
           </button>
         </div>
