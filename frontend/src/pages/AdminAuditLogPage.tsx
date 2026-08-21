@@ -26,7 +26,7 @@ export default function AdminAuditLogPage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 960 }}>
+    <div className="container-wide">
       <h1>Admin — Audit Log</h1>
       {error && <div className="error-banner" role="alert">{error}</div>}
 
@@ -45,26 +45,26 @@ export default function AdminAuditLogPage() {
       ) : entries.length === 0 ? (
         <p>No audit entries yet.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>
-              <th style={{ padding: 8 }}>When</th>
-              <th style={{ padding: 8 }}>Actor</th>
-              <th style={{ padding: 8 }}>Action</th>
-              <th style={{ padding: 8 }}>Resource</th>
-              <th style={{ padding: 8 }}>Before</th>
-              <th style={{ padding: 8 }}>After</th>
+            <tr>
+              <th>When</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Resource</th>
+              <th>Before</th>
+              <th>After</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.id} style={{ borderBottom: '1px solid var(--color-border-light)', verticalAlign: 'top' }}>
-                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{formatDateTime(e.occurredAt)}</td>
-                <td style={{ padding: 8 }}>{actorLabel(e.actorId)}</td>
-                <td style={{ padding: 8 }}>{e.action}</td>
-                <td style={{ padding: 8 }}>{e.resourceType}<br /><span style={{ color: 'var(--color-text-muted)' }}>{e.resourceId?.slice(0, 8)}</span></td>
-                <td style={{ padding: 8, maxWidth: 220, wordBreak: 'break-word', fontFamily: 'monospace' }}>{e.previousValue ?? '—'}</td>
-                <td style={{ padding: 8, maxWidth: 220, wordBreak: 'break-word', fontFamily: 'monospace' }}>{e.newValue ?? '—'}</td>
+              <tr key={e.id} style={{ verticalAlign: 'top' }}>
+                <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(e.occurredAt)}</td>
+                <td>{actorLabel(e.actorId)}</td>
+                <td>{e.action}</td>
+                <td>{e.resourceType}<br /><span style={{ color: 'var(--color-text-muted)' }}>{e.resourceId?.slice(0, 8)}</span></td>
+                <td style={{ maxWidth: 220, wordBreak: 'break-word', fontFamily: 'monospace' }}>{e.previousValue ?? '—'}</td>
+                <td style={{ maxWidth: 220, wordBreak: 'break-word', fontFamily: 'monospace' }}>{e.newValue ?? '—'}</td>
               </tr>
             ))}
           </tbody>

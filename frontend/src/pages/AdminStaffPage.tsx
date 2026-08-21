@@ -50,7 +50,7 @@ export default function AdminStaffPage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 860 }}>
+    <div className="container-wide">
       <h1>Admin — Staff</h1>
       {error && <div className="error-banner" role="alert">{error}</div>}
       {banner && <div className="success-banner" role="status">{banner}</div>}
@@ -62,22 +62,22 @@ export default function AdminStaffPage() {
         ) : staff.length === 0 ? (
           <p>No staff accounts yet.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="data-table">
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>
-                <th style={{ padding: 8 }}>Email</th>
-                <th style={{ padding: 8 }}>Role</th>
-                <th style={{ padding: 8 }}>Department</th>
-                <th style={{ padding: 8 }} />
+              <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {staff.map((s) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                  <td style={{ padding: 8 }}>{s.email}</td>
-                  <td style={{ padding: 8 }}>{ROLE_LABELS[s.role]}</td>
-                  <td style={{ padding: 8 }}>{departmentName(s.departmentId)}</td>
-                  <td style={{ padding: 8 }}>
+                <tr key={s.id}>
+                  <td>{s.email}</td>
+                  <td>{ROLE_LABELS[s.role]}</td>
+                  <td>{departmentName(s.departmentId)}</td>
+                  <td>
                     {s.doctorId && <Link to={`/admin/doctors/${s.doctorId}/schedule`}>Manage schedule</Link>}
                   </td>
                 </tr>

@@ -1,26 +1,87 @@
-/* Calm, high-contrast, uncluttered — per the office-hours wireframe brief
-   and the design review's accessibility/tone decisions. Not a final visual
-   design (that's /design-consultation's job once there's a real UI to
-   design a system around) — this is structure and legibility, done properly. */
+/* Design system: Institutional / Civic Trust — see DESIGN.md.
+   Himalayan Blue primary, restrained saffron accent, General Sans /
+   Source Sans 3, small precise radius, 8px spacing scale. */
 
 :root {
   color-scheme: light;
-  --color-text: #1a1a1a;
-  --color-text-muted: #555555; /* 7.4:1 on white — comfortably passes WCAG AA */
-  --color-border: #999999;
-  --color-border-light: #cccccc;
-  --color-bg: #ffffff;
-  --color-bg-subtle: #f5f5f5;
-  --color-accent: #1a1a1a;
-  --color-error: #b3261e;
-  --color-error-bg: #fdecea;
-  --color-success-bg: #eef7ee;
+
+  --font-display: 'General Sans', 'Source Sans 3', sans-serif;
+  --font-body: 'Source Sans 3', sans-serif;
+
+  --color-primary: #0B4F6C;
+  --color-primary-dark: #073A50;
+  --color-primary-light: #E4EDF1;
+  --color-accent: #C98A2C;
+  --color-accent-dark: #A66F1F;
+  --color-accent-contrast: #241701;
+
+  --color-text: #1A1F23;
+  --color-text-muted: #55606A; /* ~7:1 on white */
+  --color-border: #C7CFD5;
+  --color-border-light: #E2E7EA;
+  --color-bg: #FFFFFF;
+  --color-bg-subtle: #F5F7F8;
+  --color-surface: #FFFFFF;
+
+  --color-success: #1E7A3D;
+  --color-success-bg: #E9F5EC;
+  --color-warning: #B5560B;
+  --color-warning-bg: #FCEEE1;
+  --color-error: #B3261E;
+  --color-error-bg: #FBEAE9;
+  --color-info: #0B4F6C;
+  --color-info-bg: #E4EDF1;
+
   --focus-ring: 3px solid #1a56db;
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --shadow-card: 0 1px 2px rgba(11, 79, 108, 0.08), 0 1px 4px rgba(11, 79, 108, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-primary: #4C93B2;
+    --color-primary-dark: #6FADC7;
+    --color-primary-light: #12313E;
+    --color-accent: #E0A748;
+    --color-accent-dark: #F0BE6C;
+    --color-accent-contrast: #241701;
+
+    --color-text: #EAEDEF;
+    --color-text-muted: #A9B3BA;
+    --color-border: #3A444B;
+    --color-border-light: #2A3339;
+    --color-bg: #14181B;
+    --color-bg-subtle: #1B2124;
+    --color-surface: #1E2528;
+
+    --color-success: #4CAE71;
+    --color-success-bg: #17281C;
+    --color-warning: #E0954E;
+    --color-warning-bg: #2C1F12;
+    --color-error: #E1685F;
+    --color-error-bg: #2C1614;
+    --color-info: #4C93B2;
+    --color-info-bg: #12313E;
+  }
 }
 
 * {
   box-sizing: border-box;
+}
+
+html, body {
+  font-family: var(--font-body);
 }
 
 body {
@@ -31,8 +92,19 @@ body {
   line-height: 1.5;
 }
 
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-sm) 0;
+}
+
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
+
 a {
-  color: #1a56db;
+  color: var(--color-primary);
 }
 a:visited {
   color: #5b3aa7;
@@ -43,11 +115,14 @@ button, input, select {
 }
 
 button {
+  font-family: var(--font-body);
+  font-weight: 600;
   min-height: 44px;
   padding: 0 20px;
-  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-accent-dark);
   background: var(--color-accent);
-  color: white;
+  color: var(--color-accent-contrast);
   cursor: pointer;
 }
 button:disabled {
@@ -55,13 +130,19 @@ button:disabled {
   cursor: not-allowed;
 }
 button.secondary {
-  background: white;
-  color: var(--color-accent);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 button.danger {
-  background: white;
+  background: var(--color-bg);
   color: var(--color-error);
   border-color: var(--color-error);
+}
+button.ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
@@ -72,48 +153,164 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 input, select {
   min-height: 44px;
   padding: 0 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
 label {
   display: block;
-  font-size: 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
   color: var(--color-text-muted);
-  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-xs);
 }
 
 .field {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .error-banner {
   background: var(--color-error-bg);
   color: var(--color-error);
   border: 1px solid var(--color-error);
+  border-radius: var(--radius-sm);
   padding: 12px 16px;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .success-banner {
   background: var(--color-success-bg);
-  border: 1px solid #2e7d32;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
   padding: 12px 16px;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .container {
   max-width: 640px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: var(--space-xl) var(--space-md);
+}
+
+/* Wider container for tables/dashboards/reports */
+.container-wide {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.data-table th {
+  text-align: left;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  font-variant-numeric: tabular-nums;
+}
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-success { background: var(--color-success-bg); color: var(--color-success); }
+.badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.badge-error { background: var(--color-error-bg); color: var(--color-error); }
+.badge-neutral { background: var(--color-bg-subtle); color: var(--color-text-muted); }
+
+.site-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px var(--space-lg);
+  background: var(--color-primary);
+  color: white;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.site-nav a {
+  color: white;
+}
+.site-nav a:visited {
+  color: white;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  text-decoration: none;
+  color: white;
+}
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  display: inline-block;
+}
+.nav-links {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.nav-user {
+  font-size: 13px;
+  opacity: 0.85;
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, #ececec 37%, var(--color-bg-subtle) 63%);
+  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, var(--color-border-light) 37%, var(--color-bg-subtle) 63%);
   background-size: 400% 100%;
   animation: skeleton-loading 1.4s ease infinite;
   height: 44px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
 }
 
 @keyframes skeleton-loading {

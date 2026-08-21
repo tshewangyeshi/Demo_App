@@ -41,7 +41,7 @@ export default function AdminReportingPage() {
   const maxHeatmapCount = Math.max(1, ...(summary?.heatmap.map((c) => c.count) ?? [1]))
 
   return (
-    <div className="container" style={{ maxWidth: 1100 }}>
+    <div className="container-wide">
       <h1>Admin — Reports</h1>
       {error && <div className="error-banner" role="alert">{error}</div>}
 
@@ -134,7 +134,7 @@ export default function AdminReportingPage() {
               <p>No appointments in this range.</p>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+                <table className="data-table" style={{ fontSize: 12 }}>
                   <thead>
                     <tr>
                       <th style={{ padding: 6, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--color-bg)' }}>Doctor</th>
@@ -158,7 +158,7 @@ export default function AdminReportingPage() {
                                 padding: 6,
                                 textAlign: 'center',
                                 minWidth: 28,
-                                background: count === 0 ? 'transparent' : `rgba(26, 86, 219, ${0.15 + intensity * 0.75})`,
+                                background: count === 0 ? 'transparent' : `rgba(11, 79, 108, ${0.15 + intensity * 0.75})`,
                                 color: intensity > 0.5 ? 'white' : 'var(--color-text)',
                               }}
                             >
@@ -181,9 +181,9 @@ export default function AdminReportingPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ border: '1px solid var(--color-border-light)', padding: '16px 24px', minWidth: 160 }}>
-      <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 'bold' }}>{value}</div>
+    <div className="card" style={{ padding: '16px 24px', minWidth: 160 }}>
+      <div style={{ fontSize: 13, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--color-primary)' }}>{value}</div>
     </div>
   )
 }

@@ -17,6 +17,17 @@ const STATUS_LABELS: Record<string, string> = {
   RESCHEDULED: 'Rescheduled',
 }
 
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  CONFIRMED: 'badge-neutral',
+  CHECKED_IN: 'badge-warning',
+  WAITING: 'badge-warning',
+  IN_CONSULTATION: 'badge-warning',
+  COMPLETED: 'badge-success',
+  CANCELLED: 'badge-error',
+  NO_SHOW: 'badge-error',
+  RESCHEDULED: 'badge-neutral',
+}
+
 // Which action(s) make sense from each status — mirrors the backend's enforced state machine (AppointmentStatus).
 function nextActions(status: string): Array<{ key: string; label: string; danger?: boolean }> {
   switch (status) {
@@ -78,7 +89,7 @@ export default function StaffQueuePage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 860 }}>
+    <div className="container-wide">
       <h1>Front Desk Queue</h1>
       {error && <div className="error-banner" role="alert">{error}</div>}
 
@@ -92,26 +103,30 @@ export default function StaffQueuePage() {
       ) : queue.length === 0 ? (
         <p>No appointments booked for this date.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--color-border)' }}>
-              <th style={{ padding: 8 }}>Time</th>
-              <th style={{ padding: 8 }}>Patient</th>
-              <th style={{ padding: 8 }}>Doctor</th>
-              <th style={{ padding: 8 }}>Ref</th>
-              <th style={{ padding: 8 }}>Status</th>
-              <th style={{ padding: 8 }}>Action</th>
+            <tr>
+              <th>Time</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Ref</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {queue.map((appt) => (
-              <tr key={appt.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                <td style={{ padding: 8 }}>{formatTime(appt.startTime)}</td>
-                <td style={{ padding: 8 }}>{appt.patientName ?? '—'}</td>
-                <td style={{ padding: 8 }}>{doctorLabel(appt.doctorId)}</td>
-                <td style={{ padding: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>{appt.referenceNumber}</td>
-                <td style={{ padding: 8 }}>{STATUS_LABELS[appt.status] ?? appt.status}</td>
-                <td style={{ padding: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <tr key={appt.id}>
+                <td>{formatTime(appt.startTime)}</td>
+                <td>{appt.patientName ?? '—'}</td>
+                <td>{doctorLabel(appt.doctorId)}</td>
+                <td style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{appt.referenceNumber}</td>
+                <td>
+                  <span className={`badge ${STATUS_BADGE_CLASS[appt.status] ?? 'badge-neutral'}`}>
+                    {STATUS_LABELS[appt.status] ?? appt.status}
+                  </span>
+                </td>
+                <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {nextActions(appt.status).map((action) => (
                     <button
                       key={action.key}
