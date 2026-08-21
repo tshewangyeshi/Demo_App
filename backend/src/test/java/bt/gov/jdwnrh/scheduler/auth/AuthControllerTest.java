@@ -141,6 +141,47 @@ class AuthControllerTest {
                 .andExpect(content().string(""));
     }
 
+    // Regression: /review adversarial pass, 2026-08-21, Finding 1 —
+    // InMemoryRateLimiter keys its per-IP login bucket on
+    // request.getRemoteAddr(), which behind a reverse proxy returns the
+    // PROXY's address for every caller unless Spring resolves it from
+    // X-Forwarded-For. Proves server.forward-headers-strategy: framework
+    // actually takes effect, not just that the config line exists: 20
+    // requests carrying the SAME X-Forwarded-For (each a distinct email, so
+    // the per-email budget never trips) exhaust one shared per-IP bucket,
+    // while a DIFFERENT X-Forwarded-For gets its own fresh budget. Real HTTP
+    // client against the real embedded server — MockMvc's
+    // request.setRemoteAddr() bypasses the servlet filter chain entirely and
+    // would prove nothing about whether ForwardedHeaderFilter is wired up.
+    @Test
+    void ipRateLimitBucketIsScopedByForwardedForHeaderNotRawSocketAddress() throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+
+        for (int i = 0; i < 20; i++) {
+            assertEquals(401, loginAttempt(client, "xff-ip-target+" + i + "@example.com", "10.20.30.40"),
+                    "attempt " + (i + 1) + " should be a real auth failure, not yet rate limited");
+        }
+        assertEquals(429, loginAttempt(client, "xff-ip-target+overflow@example.com", "10.20.30.40"),
+                "21st attempt from the same forwarded IP must trip the per-IP budget");
+
+        // A different forwarded IP must have its own fresh budget. If
+        // getRemoteAddr() were NOT resolving X-Forwarded-For, this would
+        // also be 429 — the underlying JDK HttpClient connection is the
+        // same loopback socket either way.
+        assertEquals(401, loginAttempt(client, "xff-ip-target+overflow@example.com", "10.20.30.41"),
+                "a different forwarded IP must not share the exhausted IP's budget");
+    }
+
+    private int loginAttempt(HttpClient client, String email, String forwardedFor) throws Exception {
+        String body = "{\"email\":\"" + email + "\",\"password\":\"wrong-password\"}";
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/auth/login"))
+                .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .header("X-Forwarded-For", forwardedFor)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+    }
+
     private static org.springframework.test.web.servlet.request.RequestPostProcessor fromIp(String ip) {
         return request -> {
             request.setRemoteAddr(ip);

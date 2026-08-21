@@ -39,6 +39,29 @@ spring:
 
 server:
   port: ${PORT:8080}
+  # Resolve the real client IP from X-Forwarded-For/Forwarded once deployed
+  # behind Railway/Render's edge proxy (see /review adversarial pass,
+  # 2026-08-21, Finding 1): without this, request.getRemoteAddr() — what
+  # InMemoryRateLimiter keys login/register/staff-signup limits on — returns
+  # the PROXY's address for every request, collapsing all users into one
+  # shared bucket and turning the rate limiter into a single-attacker DoS
+  # switch against the whole app's auth endpoints. This wires Spring's
+  # ForwardedHeaderFilter, the standard fix for exactly this deployment shape.
+  #
+  # Residual risk: this trusts X-Forwarded-For/Forwarded unconditionally, so
+  # anyone who can reach the app directly (bypassing the real edge) could
+  # forge the header to get a fresh rate-limit bucket per request. This is
+  # only safe because Railway/Render both terminate all inbound traffic at
+  # their own edge — the app instance itself is not directly reachable from
+  # the internet, so an attacker cannot originate a request that skips the
+  # edge's own address in that chain. This has NOT been empirically verified
+  # against a live deployment (none exists yet). Before going live, confirm
+  # the chosen platform's proxy behavior matches this assumption; if the app
+  # is ever exposed with a path that reaches it directly (a raw IP, a second
+  # ingress, local port-forwarding in production), add
+  # server.tomcat.remoteip.internal-proxies to restrict trust to the known
+  # edge's address range, or this reopens the same spoofing hole it fixes.
+  forward-headers-strategy: framework
 
 app:
   jwt:
