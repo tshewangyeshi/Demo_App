@@ -72,6 +72,50 @@ class InMemoryRateLimiterTest {
         assertTrue(limiter.tryAcquire("attacker-key-10000", 5, Duration.ofMinutes(15)));
     }
 
+    // Regression: /review adversarial pass, 2026-08-21, Finding 2 — pure LRU
+    // eviction let an attacker flood the map with throwaway keys to evict a
+    // targeted victim's still-active per-email lockout bucket, silently
+    // resetting their attempt counter mid-attack. Proves the fix: a victim
+    // bucket that's still hot (at its own limit, within its own window)
+    // survives eviction pressure even when it's the OLDEST (most LRU-vulnerable)
+    // entry in the map, because eviction now scans ahead for an already-cold
+    // (expired-under-its-own-window) entry first and evicts that instead.
+    @Test
+    void hotVictimBucketSurvivesEvictionPressureFromExpiredDecoyKeys() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-08-21T00:00:00Z"));
+        InMemoryRateLimiter limiter = new InMemoryRateLimiter(clock);
+        Duration victimWindow = Duration.ofMinutes(15);
+        Duration decoyWindow = Duration.ofMinutes(1);
+
+        // Victim's bucket is inserted FIRST (worst case: the true LRU-oldest
+        // entry once nothing touches it again) and filled to its limit —
+        // "hot", actively blocking further attempts.
+        for (int i = 0; i < 5; i++) {
+            assertTrue(limiter.tryAcquire("login-email:victim@example.com", 5, victimWindow));
+        }
+        assertFalse(limiter.tryAcquire("login-email:victim@example.com", 5, victimWindow),
+                "victim should already be locked out before the flood starts");
+
+        // Fill the map to exactly capacity with decoys — a SHORT window
+        // (unlike the victim's long one), one attempt each, all more
+        // recently touched than the victim so they sit ahead of it in LRU
+        // order. 9,999 decoys + 1 victim = 10,000 = MAX_TRACKED_KEYS.
+        for (int i = 0; i < 9_999; i++) {
+            assertTrue(limiter.tryAcquire("decoy-" + i, 1, decoyWindow));
+        }
+
+        // Move past the decoys' own (short) window but well within the
+        // victim's (long) one, then insert one more new key — this is the
+        // flood's overflow request that forces an eviction decision.
+        clock.advance(Duration.ofMinutes(2));
+        assertTrue(limiter.tryAcquire("flood-overflow-key", 1, decoyWindow));
+
+        // The victim must still be locked out — its bucket was NOT the one
+        // evicted, even though it was the true LRU-oldest entry.
+        assertFalse(limiter.tryAcquire("login-email:victim@example.com", 5, victimWindow),
+                "victim's lockout must survive eviction pressure from expired decoy keys");
+    }
+
     private static Clock fixedClockAt(String isoInstant) {
         return Clock.fixed(Instant.parse(isoInstant), ZoneOffset.UTC);
     }
